@@ -10,14 +10,14 @@ import android.widget.Button;
 
 
 public class MainActivity extends ActionBarActivity {
-
+	private Button bAjuda;
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
         Button bIniciar = (Button) findViewById(R.id.iniciar);
-        Button bAjuda = (Button) findViewById(R.id.ajuda);
+        bAjuda = (Button) findViewById(R.id.ajuda);
         Button bOpcoes   = (Button) findViewById(R.id.opcoes);
         Button bRecorde   = (Button) findViewById(R.id.recorde);
 /*        bIniciar.setOnClickListener((OnClickListener) this);*/
@@ -38,8 +38,21 @@ public class MainActivity extends ActionBarActivity {
         case R.id.ajuda:
         	setContentView(R.layout.ajuda);
         case R.id.recorde:
-            finish();
+            finish(); 
         }
+    }
+    
+    public void voltar(View view){
+    	this.setContentView(R.layout.activity_main);
+    	bAjuda = (Button) findViewById(R.id.ajuda);
+    	 bAjuda.setOnClickListener(new OnClickListener() {
+         	public void onClick(View v){
+         		switch (v.getId()) {
+                 case R.id.ajuda:
+                 	setContentView(R.layout.ajuda);
+         		}
+         	}
+         });
     }
 
 
