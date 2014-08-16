@@ -1,0 +1,53 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/menu"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="com.es.telainicial.MainActivity" >
+
+    <Button
+        android:id="@+id/ajuda"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="30dp"
+        android:layout_marginLeft="43dp"
+        android:text="Ajuda" />
+
+    <Button
+        android:id="@+id/iniciar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/ajuda"
+        android:layout_marginBottom="22dp"
+        android:layout_marginLeft="27dp"
+        android:layout_toRightOf="@+id/ajuda"
+        android:text="Iniciar" 
+        android:onClick="iniciarJogo"/>
+
+    <Button
+        android:id="@+id/recorde"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/iniciar"
+        android:layout_alignBottom="@+id/iniciar"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="45dp"
+        android:text="Recorde" />
+
+    <Button
+        android:id="@+id/opcoes"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/ajuda"
+        android:layout_alignBottom="@+id/ajuda"
+        android:layout_marginRight="18dp"
+        android:layout_toLeftOf="@+id/recorde"
+        android:text="Opções" />
+
+</RelativeLayout>
