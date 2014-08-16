@@ -10,35 +10,41 @@
     tools:context="com.es.telainicial.MainActivity" >
 
     <Button
+        android:id="@+id/recorde"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/iniciar"
+        android:layout_alignBottom="@+id/iniciar"
+        android:layout_centerHorizontal="true"
+        android:text="Recorde" />
+
+    <Button
         android:id="@+id/ajuda"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_marginBottom="30dp"
-        android:layout_marginLeft="43dp"
+        android:layout_above="@+id/recorde"
+        android:layout_toLeftOf="@+id/recorde"
         android:text="Ajuda" />
 
     <Button
         android:id="@+id/iniciar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignBottom="@+id/ajuda"
-        android:layout_marginBottom="22dp"
-        android:layout_marginLeft="27dp"
-        android:layout_toRightOf="@+id/ajuda"
-        android:text="Iniciar" 
-        android:onClick="iniciarJogo"/>
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="43dp"
+        android:layout_toLeftOf="@+id/ajuda"
+        android:onClick="iniciarJogo"
+        android:text="Iniciar" />
 
     <Button
-        android:id="@+id/recorde"
+        android:id="@+id/sair"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignBaseline="@+id/iniciar"
-        android:layout_alignBottom="@+id/iniciar"
-        android:layout_alignParentRight="true"
-        android:layout_marginRight="45dp"
-        android:text="Recorde" />
+        android:layout_alignBaseline="@+id/recorde"
+        android:layout_alignBottom="@+id/recorde"
+        android:layout_toRightOf="@+id/opcoes"
+        android:onClick="sairJogo"
+        android:text="Sair" />
 
     <Button
         android:id="@+id/opcoes"
@@ -46,8 +52,7 @@
         android:layout_height="wrap_content"
         android:layout_alignBaseline="@+id/ajuda"
         android:layout_alignBottom="@+id/ajuda"
-        android:layout_marginRight="18dp"
-        android:layout_toLeftOf="@+id/recorde"
+        android:layout_toRightOf="@+id/recorde"
         android:text="Opções" />
 
 </RelativeLayout>

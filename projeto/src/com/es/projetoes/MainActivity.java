@@ -42,7 +42,7 @@ public class MainActivity extends ActionBarActivity {
         case R.id.ajuda:
         	setContentView(R.layout.ajuda);
         case R.id.recorde:
-            finish();
+            System.exit(0);
         }
     }
     
@@ -68,5 +68,10 @@ public class MainActivity extends ActionBarActivity {
     public void iniciarJogo(View v){
     	Intent intent = new Intent(this, Jogo.class);
     	startActivity(intent);
+    }
+    
+    public void sairJogo(View v){
+    	finish();
+    	System.exit(0);
     }
 }

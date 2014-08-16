@@ -8,22 +8,30 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.es.telainicial.MainActivity" >
-
-    <TextView
-        android:id="@+id/textView1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="false"
-        android:layout_alignParentLeft="true"
-        android:layout_gravity="center"
-        android:text="
+	<ScrollView
+      android:id="@+id/scroll" 
+	  android:layout_width="fill_parent"
+      android:layout_height="wrap_content">
+      <LinearLayout 
+            android:id="@+id/container"
+            android:orientation="vertical" 
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content">
+    		<TextView
+        	android:id="@+id/textView1"
+        	android:orientation="horizontal" 
+        	android:layout_width="wrap_content"
+        	android:layout_height="wrap_content"
+        	android:layout_alignParentTop="false"
+        	android:layout_alignParentLeft="true"
+        	android:layout_gravity="center"
+        	android:text="
 Objetivo: \n
-	Movimente a bolinha inclinando o aparelho para os lados se esquivando dos obstáculos, pegando o máximo de power ups que conseguir. Incline para frente para mover a bolinha. Avance o mais longe possível e em menos tempo para aumentar a pontuação, se o tempo chegar a zero acaba o jogo. \n
+    Movimente a bolinha inclinando o aparelho para os lados se esquivando dos obstáculos, pegando o máximo de power ups que conseguir. Incline para frente para mover a bolinha. Avance o mais longe possível e em menos tempo para aumentar a pontuação, se o tempo chegar a zero acaba o jogo. \n
 \n
 Dicas: \n 
-    Ao inclinar o dispositivo para frente, a partir de certo ponto a velocidade da bolinha aumenta, se inclinar para trás a velocidade diminui.
-    \n \n
-\n
+    Ao inclinar o dispositivo para frente, a partir de certo ponto a velocidade da bolinha aumenta, se inclinar para trás a velocidade diminui.\n
+    \n
 Obstáculos: \n
     Paredes: Não permite a progressão da bolinha. \n
     Fogo / Buraco / Bomba: O usuário perde o jogo. \n
@@ -34,6 +42,7 @@ Power ups: \n
     Moeda: Aumenta em 100 a pontuação. \n
 "
         android:textColor="#ffffff" />
-    
+    		</LinearLayout>
+    	 </ScrollView>
     </RelativeLayout>
     
