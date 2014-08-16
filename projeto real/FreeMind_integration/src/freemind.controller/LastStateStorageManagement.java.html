@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../.resources/report.gif" type="image/gif"/><title>LastStateStorageManagement.java</title><link rel="stylesheet" href="../../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../.sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FreeMind_integration (Aug 16, 2014 3:57:47 PM)</a> &gt; <a href="../../index.html" class="el_group">FreeMind_integration</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">freemind.controller</a> &gt; <span class="el_source">LastStateStorageManagement.java</span></div><h1>LastStateStorageManagement.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*FreeMind - A Program for creating and viewing Mindmaps</span>
+ *Copyright (C) 2000-2011 Joerg Mueller, Daniel Polansky, Christian Foltin, Dimitri Polivaev and others.
+ *
+ *See COPYING for Details
+ *
+ *This program is free software; you can redistribute it and/or
+ *modify it under the terms of the GNU General Public License
+ *as published by the Free Software Foundation; either version 2
+ *of the License, or (at your option) any later version.
+ *
+ *This program is distributed in the hope that it will be useful,
+ *but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *GNU General Public License for more details.
+ *
+ *You should have received a copy of the GNU General Public License
+ *along with this program; if not, write to the Free Software
+ *Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
+
+package freemind.controller;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+import java.util.Vector;
+
+import freemind.controller.actions.generated.instance.MindmapLastStateMapStorage;
+import freemind.controller.actions.generated.instance.MindmapLastStateStorage;
+import freemind.controller.actions.generated.instance.NodeListMember;
+import freemind.controller.actions.generated.instance.XmlAction;
+import freemind.main.Tools;
+
+/**
+ * @author foltin
+ * 
+ */
+public class LastStateStorageManagement {
+	public static final int LIST_AMOUNT_LIMIT = 50;
+<span class="fc" id="L43">	private MindmapLastStateMapStorage mLastStatesMap = null;</span>
+<span class="fc" id="L44">	protected static java.util.logging.Logger logger = null;</span>
+
+<span class="fc" id="L46">	public LastStateStorageManagement(String pXml) {</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">		if (logger == null) {</span>
+<span class="fc" id="L48">			logger = freemind.main.Resources.getInstance().getLogger(</span>
+<span class="fc" id="L49">					this.getClass().getName());</span>
+		}
+		try {
+<span class="fc" id="L52">			XmlAction action = Tools.unMarshall(pXml);</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">			if (action != null) {</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">				if (action instanceof MindmapLastStateMapStorage) {</span>
+<span class="fc" id="L55">					mLastStatesMap = (MindmapLastStateMapStorage) action;</span>
+
+				}
+			}
+<span class="pc" id="L59">		} catch (Exception e) {</span>
+<span class="nc" id="L60">			freemind.main.Resources.getInstance().logException(e);</span>
+		}
+<span class="fc bfc" id="L62" title="All 2 branches covered.">		if (mLastStatesMap == null) {</span>
+<span class="fc" id="L63">			logger.warning(&quot;Creating a new last state map storage as there was no old one or it was corrupt.&quot;);</span>
+<span class="fc" id="L64">			mLastStatesMap = new MindmapLastStateMapStorage();</span>
+		}
+<span class="fc" id="L66">	}</span>
+
+	public String getXml() {
+<span class="fc" id="L69">		return Tools.marshall(mLastStatesMap);</span>
+	}
+
+	public void clearTabIndices() {
+<span class="fc" id="L73">		for (Iterator it = mLastStatesMap.getListMindmapLastStateStorageList()</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">				.iterator(); it.hasNext();) {</span>
+<span class="nc" id="L75">			MindmapLastStateStorage store = (MindmapLastStateStorage) it.next();</span>
+<span class="nc" id="L76">			store.setTabIndex(-1);</span>
+		}
+<span class="fc" id="L78">	}</span>
+
+	public void changeOrAdd(MindmapLastStateStorage pStore) {
+<span class="fc" id="L81">		boolean found = false;</span>
+<span class="fc" id="L82">		for (Iterator it = mLastStatesMap.getListMindmapLastStateStorageList()</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">				.iterator(); it.hasNext();) {</span>
+<span class="fc" id="L84">			MindmapLastStateStorage store = (MindmapLastStateStorage) it.next();</span>
+<span class="fc" id="L85">			if (Tools.safeEquals(pStore.getRestorableName(),</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">					store.getRestorableName())) {</span>
+				// deep copy
+<span class="fc" id="L88">				store.setLastZoom(pStore.getLastZoom());</span>
+<span class="fc" id="L89">				store.setLastSelected(pStore.getLastSelected());</span>
+<span class="fc" id="L90">				store.setX(pStore.getX());</span>
+<span class="fc" id="L91">				store.setY(pStore.getY());</span>
+<span class="fc" id="L92">				Vector listCopy = new Vector(pStore.getListNodeListMemberList());</span>
+<span class="fc" id="L93">				store.clearNodeListMemberList();</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">				for (Iterator it2 = listCopy.iterator(); it2.hasNext();) {</span>
+<span class="nc" id="L95">					NodeListMember member = (NodeListMember) it2.next();</span>
+<span class="nc" id="L96">					store.addNodeListMember(member);</span>
+				}
+<span class="fc" id="L98">				found = true;</span>
+<span class="fc" id="L99">				setLastChanged(store);</span>
+<span class="fc" id="L100">				break;</span>
+			}
+		}
+<span class="fc bfc" id="L103" title="All 2 branches covered.">		if (!found) {</span>
+<span class="fc" id="L104">			setLastChanged(pStore);</span>
+<span class="fc" id="L105">			mLastStatesMap.addMindmapLastStateStorage(pStore);</span>
+		}
+		// size limit
+<span class="fc bfc" id="L108" title="All 2 branches covered.">		if (mLastStatesMap.sizeMindmapLastStateStorageList() &gt; LIST_AMOUNT_LIMIT) {</span>
+			// make map from date to object:
+<span class="fc" id="L110">			TreeMap dateToStoreMap = new TreeMap();</span>
+<span class="fc" id="L111">			for (Iterator it = mLastStatesMap</span>
+<span class="fc" id="L112">					.getListMindmapLastStateStorageList().iterator(); it</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">					.hasNext();) {</span>
+<span class="fc" id="L114">				MindmapLastStateStorage store = (MindmapLastStateStorage) it</span>
+<span class="fc" id="L115">						.next();</span>
+<span class="fc" id="L116">				dateToStoreMap</span>
+<span class="fc" id="L117">						.put(Long.valueOf(-store.getLastChanged()), store);</span>
+			}
+			// clear list
+<span class="fc" id="L120">			mLastStatesMap.clearMindmapLastStateStorageList();</span>
+			// rebuild
+<span class="fc" id="L122">			int counter = 0;</span>
+<span class="fc" id="L123">			for (Iterator it = dateToStoreMap.entrySet().iterator(); it</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">					.hasNext();) {</span>
+<span class="fc" id="L125">				Entry entry = (Entry) it.next();</span>
+<span class="fc" id="L126">				mLastStatesMap</span>
+<span class="fc" id="L127">						.addMindmapLastStateStorage((MindmapLastStateStorage) entry</span>
+<span class="fc" id="L128">								.getValue());</span>
+<span class="fc" id="L129">				counter++;</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">				if (counter &gt;= LIST_AMOUNT_LIMIT) {</span>
+					// drop the rest of the elements.
+<span class="fc" id="L132">					break;</span>
+				}
+			}
+		}
+<span class="fc" id="L136">	}</span>
+
+	private void setLastChanged(MindmapLastStateStorage pStore) {
+<span class="fc" id="L139">		pStore.setLastChanged(System.currentTimeMillis());</span>
+<span class="fc" id="L140">	}</span>
+
+	public MindmapLastStateStorage getStorage(String pRestorableName) {
+<span class="fc" id="L143">		for (Iterator it = mLastStatesMap.getListMindmapLastStateStorageList()</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">				.iterator(); it.hasNext();) {</span>
+<span class="fc" id="L145">			MindmapLastStateStorage store = (MindmapLastStateStorage) it.next();</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">			if (Tools.safeEquals(pRestorableName, store.getRestorableName())) {</span>
+<span class="fc" id="L147">				setLastChanged(store);</span>
+<span class="fc" id="L148">				return store;</span>
+			}
+		}
+<span class="fc" id="L151">		return null;</span>
+	}
+
+	public List getLastOpenList() {
+<span class="fc" id="L155">		Vector ret = new Vector();</span>
+<span class="fc" id="L156">		for (Iterator it = mLastStatesMap.getListMindmapLastStateStorageList()</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">				.iterator(); it.hasNext();) {</span>
+<span class="fc" id="L158">			MindmapLastStateStorage store = (MindmapLastStateStorage) it.next();</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">			if (store.getTabIndex() &gt;= 0) {</span>
+<span class="fc" id="L160">				ret.add(store);</span>
+			}
+		}
+<span class="fc" id="L163">		Collections.sort(ret, new Comparator() {</span>
+
+			public int compare(Object arg0, Object arg1) {
+<span class="fc" id="L166">				MindmapLastStateStorage store0 = (MindmapLastStateStorage) arg0;</span>
+<span class="fc" id="L167">				MindmapLastStateStorage store1 = (MindmapLastStateStorage) arg1;</span>
+<span class="fc" id="L168">				return store0.getTabIndex() - store1.getTabIndex();</span>
+			}
+		});
+<span class="fc" id="L171">		return ret;</span>
+	}
+
+	public int getLastFocussedTab() {
+<span class="nc" id="L175">		return mLastStatesMap.getLastFocusedTab();</span>
+	}
+
+	public void setLastFocussedTab(int pIndex) {
+<span class="fc" id="L179">		mLastStatesMap.setLastFocusedTab(pIndex);</span>
+<span class="fc" id="L180">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span>FreeMind_integration (Aug 16, 2014 3:57:47 PM)</div></body></html>

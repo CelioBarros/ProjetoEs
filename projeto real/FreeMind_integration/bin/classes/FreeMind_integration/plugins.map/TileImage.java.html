@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../.resources/report.gif" type="image/gif"/><title>TileImage.java</title><link rel="stylesheet" href="../../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../.sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FreeMind_integration (Aug 16, 2014 2:28:58 PM)</a> &gt; <a href="../../index.html" class="el_group">FreeMind_integration</a> &gt; <a href="../index.html" class="el_bundle">FreeMind_integration</a> &gt; <a href="index.source.html" class="el_package">plugins.map</a> &gt; <span class="el_source">TileImage.java</span></div><h1>TileImage.java</h1><pre class="source lang-java linenums">/*FreeMind - A Program for creating and viewing Mindmaps
+*Copyright (C) 2000-2011 Joerg Mueller, Daniel Polansky, Christian Foltin, Dimitri Polivaev and others.
+*
+*See COPYING for Details
+*
+*This program is free software; you can redistribute it and/or
+*modify it under the terms of the GNU General Public License
+*as published by the Free Software Foundation; either version 2
+*of the License, or (at your option) any later version.
+*
+*This program is distributed in the hope that it will be useful,
+*but WITHOUT ANY WARRANTY; without even the implied warranty of
+*MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*GNU General Public License for more details.
+*
+*You should have received a copy of the GNU General Public License
+*along with this program; if not, write to the Free Software
+*Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+*/
+
+package plugins.map;
+
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.awt.image.ImageObserver;
+import java.awt.image.RenderedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.logging.Logger;
+
+import javax.imageio.ImageIO;
+
+import org.openstreetmap.gui.jmapviewer.Tile;
+import org.openstreetmap.gui.jmapviewer.TileController;
+
+import freemind.main.Tools;
+
+public class TileImage implements ImageObserver {
+
+<span class="nc" id="L46">	private Tile[][] mTiles = null;</span>
+<span class="nc" id="L47">	private boolean mTilesPresent = false;</span>
+<span class="nc" id="L48">	private boolean mImageCreated = false;</span>
+	private BufferedImage mImage;
+<span class="nc" id="L50">	private int mWaitingForCallbacks = 0;</span>
+	private int mDx;
+	private int mDy;
+
+<span class="nc" id="L54">	public TileImage() {</span>
+
+<span class="nc" id="L56">	}</span>
+
+	public boolean isLoaded() {
+<span class="nc bnc" id="L59" title="All 2 branches missed.">		if (!mTilesPresent)</span>
+<span class="nc" id="L60">			return false;</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">		for (int i = 0; i &lt; mTiles.length; i++) {</span>
+<span class="nc" id="L62">			Tile[] tiles = mTiles[i];</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">			for (int j = 0; j &lt; tiles.length; j++) {</span>
+<span class="nc" id="L64">				Tile tile = tiles[j];</span>
+<span class="nc bnc" id="L65" title="All 4 branches missed.">				if (!tile.isLoaded() &amp;&amp; !tile.hasError()) {</span>
+<span class="nc" id="L66">					System.out.println(&quot;Tile &quot; + tile + &quot; is not loaded:&quot;</span>
+<span class="nc" id="L67">							+ tile.getStatus());</span>
+<span class="nc" id="L68">					return false;</span>
+				}
+			}
+		}
+<span class="nc bnc" id="L72" title="All 2 branches missed.">		if (!mImageCreated) {</span>
+<span class="nc" id="L73">			createImage();</span>
+<span class="nc" id="L74">			mImageCreated = true;</span>
+		}
+<span class="nc" id="L76">		return isDrawingDone();</span>
+	}
+
+	/**
+	 * Is called when all tiles are loaded and creates the common picture.
+	 */
+	private void createImage() {
+<span class="nc" id="L83">		BufferedImage tileImage00 = mTiles[0][0].getImage();</span>
+<span class="nc" id="L84">		int height = tileImage00.getHeight();</span>
+<span class="nc" id="L85">		int width = tileImage00.getWidth();</span>
+<span class="nc" id="L86">		mImage = new BufferedImage(height * mTiles[0].length, width</span>
+<span class="nc" id="L87">				* mTiles.length, BufferedImage.TYPE_INT_RGB);</span>
+<span class="nc" id="L88">		Graphics2D graphics = (Graphics2D) mImage.getGraphics();</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">		for (int i = 0; i &lt; mTiles.length; i++) {</span>
+<span class="nc" id="L90">			Tile[] tiles = mTiles[i];</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">			for (int j = 0; j &lt; tiles.length; j++) {</span>
+<span class="nc" id="L92">				Tile tile = tiles[j];</span>
+<span class="nc" id="L93">				boolean done = graphics.drawImage(tile.getImage(), i</span>
+<span class="nc" id="L94">						* height, j * width, this);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">				if (!done) {</span>
+<span class="nc" id="L96">					mWaitingForCallbacks++;</span>
+				}
+			}
+		}
+<span class="nc bnc" id="L100" title="All 2 branches missed.">		if (isDrawingDone()) {</span>
+<span class="nc" id="L101">			drawCross();</span>
+		}
+<span class="nc" id="L103">	}</span>
+
+	public boolean isDrawingDone() {
+<span class="nc bnc" id="L106" title="All 2 branches missed.">		return mWaitingForCallbacks &lt;= 0;</span>
+	}
+
+	public void drawCross() {
+<span class="nc" id="L110">		Graphics2D graphics = (Graphics2D) mImage.getGraphics();</span>
+<span class="nc" id="L111">		graphics.setColor(Color.RED);</span>
+<span class="nc" id="L112">		graphics.setStroke(new BasicStroke(4));</span>
+<span class="nc" id="L113">		int size = 15;</span>
+<span class="nc" id="L114">		graphics.drawLine(mDx - size, mDy, mDx + size, mDy);</span>
+<span class="nc" id="L115">		graphics.drawLine(mDx, mDy - size, mDx, mDy + size);</span>
+<span class="nc" id="L116">	}</span>
+
+	public void load(String pCodedImage) {
+		try {
+<span class="nc" id="L120">			mImage = ImageIO.read(new ByteArrayInputStream(Tools</span>
+<span class="nc" id="L121">					.fromBase64(pCodedImage)));</span>
+<span class="nc" id="L122">			mTilesPresent = false;</span>
+<span class="nc" id="L123">			mImageCreated = true;</span>
+<span class="nc" id="L124">		} catch (IOException e) {</span>
+<span class="nc" id="L125">			freemind.main.Resources.getInstance().logException(e);</span>
+		}
+<span class="nc" id="L127">	}</span>
+
+	public void load(File pFileName) {
+		try {
+<span class="nc" id="L131">			mImage = ImageIO.read(new FileInputStream(pFileName));</span>
+<span class="nc" id="L132">			mTilesPresent = false;</span>
+<span class="nc" id="L133">			mImageCreated = true;</span>
+<span class="nc" id="L134">		} catch (IOException e) {</span>
+<span class="nc" id="L135">			freemind.main.Resources.getInstance().logException(e);</span>
+		}
+<span class="nc" id="L137">	}</span>
+	
+	public String save() {
+		try {
+<span class="nc" id="L141">			ByteArrayOutputStream stream = new ByteArrayOutputStream();</span>
+<span class="nc" id="L142">			ImageIO.write(mImage, &quot;png&quot;, stream);</span>
+<span class="nc" id="L143">			stream.close();</span>
+<span class="nc" id="L144">			return Tools.toBase64(stream.toByteArray());</span>
+<span class="nc" id="L145">		} catch (Exception e) {</span>
+<span class="nc" id="L146">			freemind.main.Resources.getInstance().logException(e);</span>
+		}
+<span class="nc" id="L148">		return null;</span>
+
+	}
+
+	/**
+	 * @return
+	 */
+	public RenderedImage getImage() {
+<span class="nc" id="L156">		return mImage;</span>
+	}
+
+	/**
+	 * @param pDimension
+	 * @param pX
+	 * @param pY
+	 * @param pZoom
+	 * @param mTileController
+	 * @param pLogger
+	 * @param pDy
+	 * @param pDx
+	 */
+	public void setTiles(int pDimension, int pX, int pY, int pZoom,
+			TileController mTileController, Logger pLogger, int pDx, int pDy) {
+<span class="nc" id="L171">		mDx = pDx;</span>
+<span class="nc" id="L172">		mDy = pDy;</span>
+<span class="nc" id="L173">		mTiles = new Tile[pDimension][pDimension];</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">		for (int i = 0; i &lt; pDimension; ++i) {</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">			for (int j = 0; j &lt; pDimension; ++j) {</span>
+<span class="nc" id="L176">				pLogger.fine(&quot;Trying to load tile to x=&quot; + (pX + i)</span>
+<span class="nc" id="L177">						+ &quot;, y=&quot; + (pY + j) + &quot;, zoom=&quot; + pZoom);</span>
+<span class="nc" id="L178">				mTiles[i][j] = mTileController.getTile(pX + i, pY + j,</span>
+<span class="nc" id="L179">						pZoom);</span>
+			}
+		}
+<span class="nc" id="L182">		mTilesPresent = true;</span>
+<span class="nc" id="L183">	}</span>
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.awt.image.ImageObserver#imageUpdate(java.awt.Image, int,
+	 * int, int, int, int)
+	 */
+	public boolean imageUpdate(Image pImg, int pInfoflags, int pX, int pY,
+			int pWidth, int pHeight) {
+<span class="nc" id="L193">		mWaitingForCallbacks--;</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">		if (isDrawingDone()) {</span>
+<span class="nc" id="L195">			drawCross();</span>
+		}
+<span class="nc" id="L197">		return isDrawingDone();</span>
+	}
+
+	/**
+	 * @return
+	 */
+	public boolean hasErrors() {
+<span class="nc bnc" id="L204" title="All 2 branches missed.">		if (!mTilesPresent)</span>
+<span class="nc" id="L205">			return false;</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">		for (int i = 0; i &lt; mTiles.length; i++) {</span>
+<span class="nc" id="L207">			Tile[] tiles = mTiles[i];</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">			for (int j = 0; j &lt; tiles.length; j++) {</span>
+<span class="nc" id="L209">				Tile tile = tiles[j];</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">				if (tile.hasError()) {</span>
+<span class="nc" id="L211">					return true;</span>
+				}
+			}
+		}
+<span class="nc" id="L215">		return false;</span>
+	}
+
+	public boolean isImageCreated() {
+<span class="nc" id="L219">		return mImageCreated;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span>FreeMind_integration (Aug 16, 2014 2:28:58 PM)</div></body></html>

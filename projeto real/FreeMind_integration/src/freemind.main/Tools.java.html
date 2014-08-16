@@ -1,0 +1,2029 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../.resources/report.gif" type="image/gif"/><title>Tools.java</title><link rel="stylesheet" href="../../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../.sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FreeMind_integration (Aug 16, 2014 3:57:47 PM)</a> &gt; <a href="../../index.html" class="el_group">FreeMind_integration</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">freemind.main</a> &gt; <span class="el_source">Tools.java</span></div><h1>Tools.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*</span>
+ * FreeMind - a program for creating and viewing mindmaps
+ * Copyright (C) 2000-2006  Joerg Mueller, Daniel Polansky, Christian Foltin and others.
+ * See COPYING for details
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 2 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
+ * Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
+
+package freemind.main;
+
+//maybe move this class to another package like tools or something...
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
+import java.awt.Insets;
+import java.awt.KeyboardFocusManager;
+import java.awt.Point;
+import java.awt.RenderingHints;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.print.Paper;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.net.UnknownHostException;
+import java.security.spec.AlgorithmParameterSpec;
+import java.security.spec.KeySpec;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Properties;
+import java.util.Random;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.Vector;
+import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
+
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.PBEParameterSpec;
+import javax.swing.AbstractAction;
+import javax.swing.AbstractButton;
+import javax.swing.Action;
+import javax.swing.InputMap;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import javax.swing.UIManager;
+import javax.xml.transform.Result;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+
+import freemind.common.XmlBindingTools;
+import freemind.controller.actions.generated.instance.CompoundAction;
+import freemind.controller.actions.generated.instance.XmlAction;
+import freemind.modes.MindMapNode;
+import freemind.modes.mindmapmode.MindMapController;
+import freemind.view.mindmapview.NodeView;
+
+/**
+ * @author foltin
+ * 
+ */
+<span class="fc" id="L120">public class Tools {</span>
+	/**
+	 * 
+	 */
+	public static final String FREEMIND_LIB_FREEMIND_JAR = &quot;lib/freemind.jar&quot;;
+
+<span class="fc" id="L126">	private static java.util.logging.Logger logger = null;</span>
+	static {
+<span class="fc" id="L128">		logger = freemind.main.Resources.getInstance().getLogger(&quot;Tools&quot;);</span>
+	}
+
+	public static final String CONTENTS_JAVA_FREEMIND_JAR = &quot;Contents/Java/freemind.jar&quot;;
+
+	public static final String FREE_MIND_APP_CONTENTS_RESOURCES_JAVA = &quot;Contents/Resources/Java/&quot;;
+
+	// public static final Set executableExtensions = new HashSet ({ &quot;exe&quot;,
+	// &quot;com&quot;, &quot;vbs&quot; });
+
+	// The Java programming language provides a shortcut syntax for creating and
+	// initializing an array. Here's an example of this syntax:
+	// boolean[] answers = { true, false, true, true, false };
+
+<span class="fc" id="L142">	public static final Set executableExtensions = new HashSet(</span>
+<span class="fc" id="L143">			Arrays.asList(new String[] { &quot;exe&quot;, &quot;com&quot;, &quot;vbs&quot;, &quot;bat&quot;, &quot;lnk&quot; }));</span>
+
+<span class="fc" id="L145">	private static Set availableFontFamilyNames = null; // Keep set of platform</span>
+
+<span class="fc" id="L147">	private static String sEnvFonts[] = null;</span>
+
+	// bug fix from Dimitri.
+<span class="fc" id="L150">	public static Random ran = new Random();</span>
+
+	// fonts
+
+	public static boolean executableByExtension(String file) {
+<span class="fc" id="L155">		return executableExtensions.contains(getExtension(file));</span>
+	}
+
+	public static String colorToXml(Color col) {
+		// if (col == null) throw new IllegalArgumentException(&quot;Color was
+		// null&quot;);
+<span class="nc bnc" id="L161" title="All 2 branches missed.">		if (col == null)</span>
+<span class="nc" id="L162">			return null;</span>
+<span class="nc" id="L163">		String red = Integer.toHexString(col.getRed());</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">		if (col.getRed() &lt; 16)</span>
+<span class="nc" id="L165">			red = &quot;0&quot; + red;</span>
+<span class="nc" id="L166">		String green = Integer.toHexString(col.getGreen());</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">		if (col.getGreen() &lt; 16)</span>
+<span class="nc" id="L168">			green = &quot;0&quot; + green;</span>
+<span class="nc" id="L169">		String blue = Integer.toHexString(col.getBlue());</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">		if (col.getBlue() &lt; 16)</span>
+<span class="nc" id="L171">			blue = &quot;0&quot; + blue;</span>
+<span class="nc" id="L172">		return &quot;#&quot; + red + green + blue;</span>
+	}
+
+	public static Color xmlToColor(String string) {
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">		if (string == null)</span>
+<span class="nc" id="L177">			return null;</span>
+<span class="fc" id="L178">		string = string.trim();</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">		if (string.length() == 7) {</span>
+
+<span class="nc" id="L181">			int red = Integer.parseInt(string.substring(1, 3), 16);</span>
+<span class="nc" id="L182">			int green = Integer.parseInt(string.substring(3, 5), 16);</span>
+<span class="nc" id="L183">			int blue = Integer.parseInt(string.substring(5, 7), 16);</span>
+<span class="nc" id="L184">			return new Color(red, green, blue);</span>
+		} else {
+<span class="fc" id="L186">			throw new IllegalArgumentException(&quot;No xml color given by '&quot;</span>
+<span class="fc" id="L187">					+ string + &quot;'.&quot;);</span>
+		}
+	}
+
+	public static String PointToXml(Point col) {
+<span class="nc bnc" id="L192" title="All 2 branches missed.">		if (col == null)</span>
+<span class="nc" id="L193">			return null; // throw new IllegalArgumentException(&quot;Point was</span>
+		// null&quot;);
+<span class="nc" id="L195">		Vector l = new Vector();</span>
+<span class="nc" id="L196">		l.add(Integer.toString(col.x));</span>
+<span class="nc" id="L197">		l.add(Integer.toString(col.y));</span>
+<span class="nc" id="L198">		return listToString((List) l);</span>
+	}
+
+	public static Point xmlToPoint(String string) {
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">		if (string == null)</span>
+<span class="nc" id="L203">			return null;</span>
+		// fc, 3.11.2004: bug fix for alpha release of FM
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">		if (string.startsWith(&quot;java.awt.Point&quot;)) {</span>
+<span class="nc" id="L206">			string = string.replaceAll(</span>
+<span class="nc" id="L207">					&quot;java\\.awt\\.Point\\[x=(-*[0-9]*),y=(-*[0-9]*)\\]&quot;,</span>
+<span class="nc" id="L208">					&quot;$1;$2&quot;);</span>
+		}
+<span class="fc" id="L210">		List l = stringToList(string);</span>
+<span class="fc" id="L211">		ListIterator it = l.listIterator(0);</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">		if (l.size() != 2)</span>
+<span class="fc" id="L213">			throw new IllegalArgumentException(</span>
+<span class="fc" id="L214">					&quot;A point must consist of two numbers (and not: '&quot; + string</span>
+<span class="fc" id="L215">							+ &quot;').&quot;);</span>
+<span class="nc" id="L216">		int x = Integer.parseInt((String) it.next());</span>
+<span class="nc" id="L217">		int y = Integer.parseInt((String) it.next());</span>
+<span class="nc" id="L218">		return new Point(x, y);</span>
+	}
+
+	public static String BooleanToXml(boolean col) {
+<span class="fc bfc" id="L222" title="All 2 branches covered.">		return (col) ? &quot;true&quot; : &quot;false&quot;;</span>
+	}
+
+	public static boolean xmlToBoolean(String string) {
+<span class="nc bnc" id="L226" title="All 2 branches missed.">		if (string == null)</span>
+<span class="nc" id="L227">			return false;</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">		if (string.equals(&quot;true&quot;))</span>
+<span class="nc" id="L229">			return true;</span>
+<span class="nc" id="L230">		return false;</span>
+	}
+
+	/**
+	 * Converts a String in the format &quot;value;value;value&quot; to a List with the
+	 * values (as strings)
+	 */
+	public static List stringToList(String string) {
+<span class="fc" id="L238">		StringTokenizer tok = new StringTokenizer(string, &quot;;&quot;);</span>
+<span class="fc" id="L239">		List list = new LinkedList();</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">		while (tok.hasMoreTokens()) {</span>
+<span class="fc" id="L241">			list.add(tok.nextToken());</span>
+		}
+<span class="fc" id="L243">		return list;</span>
+	}
+
+	public static String listToString(List list) {
+<span class="nc" id="L247">		ListIterator it = list.listIterator(0);</span>
+<span class="nc" id="L248">		String str = new String();</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">		while (it.hasNext()) {</span>
+<span class="nc" id="L250">			str += it.next().toString() + &quot;;&quot;;</span>
+		}
+<span class="nc" id="L252">		return str;</span>
+	}
+
+	/**
+	 * Replaces a ~ in a filename with the users home directory
+	 */
+	public static String expandFileName(String file) {
+		// replace ~ with the users home dir
+<span class="pc bpc" id="L260" title="1 of 2 branches missed.">		if (file.startsWith(&quot;~&quot;)) {</span>
+<span class="nc" id="L261">			file = System.getProperty(&quot;user.home&quot;) + file.substring(1);</span>
+		}
+<span class="fc" id="L263">		return file;</span>
+	}
+
+	public static Set getAvailableFontFamilyNames() {
+<span class="fc bfc" id="L267" title="All 2 branches covered.">		if (availableFontFamilyNames == null) {</span>
+<span class="fc" id="L268">			String[] envFonts = getAvailableFonts();</span>
+<span class="fc" id="L269">			availableFontFamilyNames = new HashSet();</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">			for (int i = 0; i &lt; envFonts.length; i++) {</span>
+<span class="fc" id="L271">				availableFontFamilyNames.add(envFonts[i]);</span>
+			}
+			// Add this one explicitly, Java defaults to it if the font is not
+<span class="fc" id="L274">			availableFontFamilyNames.add(&quot;dialog&quot;);</span>
+		}
+<span class="fc" id="L276">		return availableFontFamilyNames;</span>
+	}
+
+	/**
+     */
+	private static String[] getAvailableFonts() {
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">		if (sEnvFonts == null) {</span>
+<span class="fc" id="L283">			GraphicsEnvironment gEnv = GraphicsEnvironment</span>
+<span class="fc" id="L284">					.getLocalGraphicsEnvironment();</span>
+<span class="fc" id="L285">			sEnvFonts = gEnv.getAvailableFontFamilyNames();</span>
+		}
+<span class="fc" id="L287">		return sEnvFonts;</span>
+	}
+
+	public static Vector getAvailableFontFamilyNamesAsVector() {
+<span class="nc" id="L291">		String[] envFonts = getAvailableFonts();</span>
+<span class="nc" id="L292">		Vector availableFontFamilyNames = new Vector();</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">		for (int i = 0; i &lt; envFonts.length; i++) {</span>
+<span class="nc" id="L294">			availableFontFamilyNames.add(envFonts[i]);</span>
+		}
+<span class="nc" id="L296">		return availableFontFamilyNames;</span>
+	}
+
+	public static boolean isAvailableFontFamily(String fontFamilyName) {
+<span class="fc" id="L300">		return getAvailableFontFamilyNames().contains(fontFamilyName);</span>
+	}
+
+	/**
+	 * Returns the lowercase of the extension of a file. Example:
+	 * getExtension(&quot;fork.pork.MM&quot;) ==
+	 * freemind.main.FreeMindCommon.FREEMIND_FILE_EXTENSION_WITHOUT_DOT
+	 */
+	public static String getExtension(File f) {
+<span class="fc" id="L309">		return getExtension(f.toString());</span>
+	}
+
+	/**
+	 * Returns the lowercase of the extension of a file name. Example:
+	 * getExtension(&quot;fork.pork.MM&quot;) ==
+	 * freemind.main.FreeMindCommon.FREEMIND_FILE_EXTENSION_WITHOUT_DOT
+	 */
+	public static String getExtension(String s) {
+<span class="fc" id="L318">		int i = s.lastIndexOf('.');</span>
+<span class="pc bpc" id="L319" title="1 of 4 branches missed.">		return (i &gt; 0 &amp;&amp; i &lt; s.length() - 1) ? s.substring(i + 1).toLowerCase()</span>
+<span class="fc" id="L320">				.trim() : &quot;&quot;;</span>
+	}
+
+	public static String removeExtension(String s) {
+<span class="nc" id="L324">		int i = s.lastIndexOf('.');</span>
+<span class="nc bnc" id="L325" title="All 4 branches missed.">		return (i &gt; 0 &amp;&amp; i &lt; s.length() - 1) ? s.substring(0, i) : &quot;&quot;;</span>
+	}
+
+	public static boolean isAbsolutePath(String path) {
+		// On Windows, we cannot just ask if the file name starts with file
+		// separator.
+		// If path contains &quot;:&quot; at the second position, then it is not relative,
+		// I guess.
+		// However, if it starts with separator, then it is absolute too.
+
+		// Possible problems: Not tested on Macintosh, but should work.
+		// Koh, 1.4.2004: Resolved problem: I tested on Mac OS X 10.3.3 and
+		// worked.
+
+<span class="fc" id="L339">		String osNameStart = System.getProperty(&quot;os.name&quot;).substring(0, 3);</span>
+<span class="fc" id="L340">		String fileSeparator = System.getProperty(&quot;file.separator&quot;);</span>
+<span class="pc bpc" id="L341" title="1 of 2 branches missed.">		if (osNameStart.equals(&quot;Win&quot;)) {</span>
+<span class="nc bnc" id="L342" title="All 4 branches missed.">			return ((path.length() &gt; 1) &amp;&amp; path.substring(1, 2).equals(&quot;:&quot;))</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">					|| path.startsWith(fileSeparator);</span>
+<span class="pc bpc" id="L344" title="1 of 2 branches missed.">		} else if (osNameStart.equals(&quot;Mac&quot;)) {</span>
+			// Koh:Panther (or Java 1.4.2) may change file path rule
+<span class="nc" id="L346">			return path.startsWith(fileSeparator);</span>
+		} else {
+<span class="fc" id="L348">			return path.startsWith(fileSeparator);</span>
+		}
+	}
+
+	/**
+	 * This is a correction of a method getFile of a class URL. Namely, on
+	 * Windows it returned file paths like /C: etc., which are not valid on
+	 * Windows. This correction is heuristic to a great extend. One of the
+	 * reasons is that file:// is basically no protocol at all, but rather
+	 * something every browser and every system uses slightly differently.
+	 */
+	public static String urlGetFile(URL url) {
+<span class="nc bnc" id="L360" title="All 4 branches missed.">		if (isWindows() &amp;&amp; isFile(url)) {</span>
+<span class="nc" id="L361">			String fileName = url.toString().replaceFirst(&quot;^file:&quot;, &quot;&quot;)</span>
+<span class="nc" id="L362">					.replace('/', '\\');</span>
+<span class="nc bnc" id="L363" title="All 2 branches missed.">			return (fileName.indexOf(':') &gt;= 0) ? fileName.replaceFirst(</span>
+<span class="nc" id="L364">					&quot;^\\\\*&quot;, &quot;&quot;) : fileName;</span>
+		} // Network path
+		else {
+<span class="nc" id="L367">			return url.getFile();</span>
+		}
+	}
+
+	public static boolean isWindows() {
+<span class="fc" id="L372">		return System.getProperty(&quot;os.name&quot;).substring(0, 3).equals(&quot;Win&quot;);</span>
+	}
+
+	public static boolean isFile(URL url) {
+<span class="nc" id="L376">		return url.getProtocol().equals(&quot;file&quot;);</span>
+	}
+
+	/**
+	 * @return &quot;/&quot; for absolute file names under Unix, &quot;c:\\&quot; or similar under
+	 *         windows, null otherwise
+	 */
+	public static String getPrefix(String pFileName) {
+<span class="pc bpc" id="L384" title="1 of 2 branches missed.">		if (isWindows()) {</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">			if (pFileName.matches(&quot;^[a-zA-Z]:\\\\.*&quot;)) {</span>
+<span class="nc" id="L386">				return pFileName.substring(0, 3);</span>
+			}
+		} else {
+<span class="fc bfc" id="L389" title="All 2 branches covered.">			if (pFileName.startsWith(File.separator)) {</span>
+<span class="fc" id="L390">				return File.separator;</span>
+			}
+		}
+<span class="fc" id="L393">		return null;</span>
+	}
+
+	/**
+	 * This method converts an absolute url to an url relative to a given
+	 * base-url. Something like this should be included in the librarys, but I
+	 * couldn't find it. You can create a new absolute url with
+	 * &quot;new URL(URL context, URL relative)&quot;.
+	 */
+	public static String toRelativeURL(URL base, URL target) {
+		// Precondition: If URL is a path to folder, then it must end with '/'
+		// character.
+<span class="nc bnc" id="L405" title="All 4 branches missed.">		if (base == null || !base.getProtocol().equals(target.getProtocol())</span>
+<span class="nc bnc" id="L406" title="All 2 branches missed.">				|| !base.getHost().equals(target.getHost())) {</span>
+<span class="nc" id="L407">			return target.toString();</span>
+		}
+<span class="nc" id="L409">		String baseString = base.getFile();</span>
+<span class="nc" id="L410">		String targetString = target.getFile();</span>
+<span class="nc" id="L411">		String result = &quot;&quot;;</span>
+		// remove filename from URL
+<span class="nc" id="L413">		targetString = targetString.substring(0,</span>
+<span class="nc" id="L414">				targetString.lastIndexOf(&quot;/&quot;) + 1);</span>
+		// remove filename from URL
+<span class="nc" id="L416">		baseString = baseString.substring(0, baseString.lastIndexOf(&quot;/&quot;) + 1);</span>
+
+		// Algorithm
+		// look for same start:
+<span class="nc" id="L420">		int index = targetString.length() - 1;</span>
+<span class="nc bnc" id="L421" title="All 2 branches missed.">		while (!baseString.startsWith(targetString.substring(0, index + 1))) {</span>
+			// remove last part:
+<span class="nc" id="L423">			index = targetString.lastIndexOf(&quot;/&quot;, index - 1);</span>
+<span class="nc bnc" id="L424" title="All 2 branches missed.">			if (index &lt; 0) {</span>
+				// no common part. This is strange, as both should start with /,
+				// but...
+<span class="nc" id="L427">				break;</span>
+			}
+		}
+
+		// now, baseString is targetString + &quot;/&quot; + rest. we determine
+		// rest=baseStringRest now.
+<span class="nc" id="L433">		String baseStringRest = baseString</span>
+<span class="nc" id="L434">				.substring(index, baseString.length());</span>
+
+		// Maybe this causes problems under windows
+<span class="nc" id="L437">		StringTokenizer baseTokens = new StringTokenizer(baseStringRest, &quot;/&quot;);</span>
+
+		// Maybe this causes problems under windows
+<span class="nc" id="L440">		StringTokenizer targetTokens = new StringTokenizer(</span>
+<span class="nc" id="L441">				targetString.substring(index + 1), &quot;/&quot;);</span>
+
+<span class="nc" id="L443">		String nextTargetToken = &quot;&quot;;</span>
+
+<span class="nc bnc" id="L445" title="All 2 branches missed.">		while (baseTokens.hasMoreTokens()) {</span>
+<span class="nc" id="L446">			result = result.concat(&quot;../&quot;);</span>
+<span class="nc" id="L447">			baseTokens.nextToken();</span>
+		}
+<span class="nc bnc" id="L449" title="All 2 branches missed.">		while (targetTokens.hasMoreTokens()) {</span>
+<span class="nc" id="L450">			nextTargetToken = targetTokens.nextToken();</span>
+<span class="nc" id="L451">			result = result.concat(nextTargetToken + &quot;/&quot;);</span>
+		}
+
+<span class="nc" id="L454">		String temp = target.getFile();</span>
+<span class="nc" id="L455">		result = result.concat(temp.substring(temp.lastIndexOf(&quot;/&quot;) + 1,</span>
+<span class="nc" id="L456">				temp.length()));</span>
+<span class="nc" id="L457">		return result;</span>
+	}
+
+	/**
+	 * If the preferences say, that links should be relative, a relative url is
+	 * returned.
+	 * 
+	 * @param input
+	 *            the file that is treated
+	 * @param pMapFile
+	 *            the file, that input is made relative to
+	 * @return in case of trouble the absolute path.
+	 */
+	public static String fileToRelativeUrlString(File input, File pMapFile) {
+		URL link;
+		String relative;
+		try {
+<span class="nc" id="L474">			link = Tools.fileToUrl(input);</span>
+<span class="nc" id="L475">			relative = link.toString();</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">			if (&quot;relative&quot;.equals(Resources.getInstance().getProperty(&quot;links&quot;))) {</span>
+				// Create relative URL
+<span class="nc" id="L478">				relative = Tools.toRelativeURL(Tools.fileToUrl(pMapFile), link);</span>
+			}
+<span class="nc" id="L480">			return relative;</span>
+<span class="nc" id="L481">		} catch (MalformedURLException ex) {</span>
+<span class="nc" id="L482">			freemind.main.Resources.getInstance().logException(ex);</span>
+		}
+<span class="nc" id="L484">		return input.getAbsolutePath();</span>
+	}
+
+	/**
+	 * Tests a string to be equals with &quot;true&quot;.
+	 * 
+	 * @return true, iff the String is &quot;true&quot;.
+	 */
+	public static boolean isPreferenceTrue(String option) {
+<span class="nc" id="L493">		return Tools.safeEquals(option, &quot;true&quot;);</span>
+	}
+
+	/**
+	 * @param string1
+	 *            input (or null)
+	 * @param string2
+	 *            input (or null)
+	 * @return true, if equal (that means: same text or both null)
+	 */
+	public static boolean safeEquals(String string1, String string2) {
+<span class="pc bpc" id="L504" title="1 of 6 branches missed.">		return (string1 != null &amp;&amp; string2 != null &amp;&amp; string1.equals(string2))</span>
+<span class="pc bpc" id="L505" title="1 of 4 branches missed.">				|| (string1 == null &amp;&amp; string2 == null);</span>
+	}
+
+	public static boolean safeEquals(Object obj1, Object obj2) {
+<span class="pc bpc" id="L509" title="1 of 6 branches missed.">		return (obj1 != null &amp;&amp; obj2 != null &amp;&amp; obj1.equals(obj2))</span>
+<span class="pc bpc" id="L510" title="3 of 4 branches missed.">				|| (obj1 == null &amp;&amp; obj2 == null);</span>
+	}
+
+	public static boolean safeEqualsIgnoreCase(String string1, String string2) {
+<span class="nc bnc" id="L514" title="All 4 branches missed.">		return (string1 != null &amp;&amp; string2 != null &amp;&amp; string1.toLowerCase()</span>
+<span class="nc bnc" id="L515" title="All 2 branches missed.">				.equals(string2.toLowerCase()))</span>
+<span class="nc bnc" id="L516" title="All 4 branches missed.">				|| (string1 == null &amp;&amp; string2 == null);</span>
+	}
+
+	public static boolean safeEquals(Color color1, Color color2) {
+<span class="nc bnc" id="L520" title="All 6 branches missed.">		return (color1 != null &amp;&amp; color2 != null &amp;&amp; color1.equals(color2))</span>
+<span class="nc bnc" id="L521" title="All 4 branches missed.">				|| (color1 == null &amp;&amp; color2 == null);</span>
+	}
+
+	public static String firstLetterCapitalized(String text) {
+<span class="pc bpc" id="L525" title="2 of 4 branches missed.">		if (text == null || text.length() == 0) {</span>
+<span class="nc" id="L526">			return text;</span>
+		}
+<span class="fc" id="L528">		return text.substring(0, 1).toUpperCase()</span>
+<span class="fc" id="L529">				+ text.substring(1, text.length());</span>
+	}
+
+	public static void setHidden(File file, boolean hidden,
+			boolean synchronously) {
+		// According to Web articles, UNIX systems do not have attribute hidden
+		// in general, rather, they consider files starting with . as hidden.
+<span class="fc" id="L536">		String osNameStart = System.getProperty(&quot;os.name&quot;).substring(0, 3);</span>
+<span class="pc bpc" id="L537" title="1 of 2 branches missed.">		if (osNameStart.equals(&quot;Win&quot;)) {</span>
+			try {
+<span class="nc" id="L539">				Runtime.getRuntime().exec(</span>
+<span class="nc bnc" id="L540" title="All 2 branches missed.">						&quot;attrib &quot; + (hidden ? &quot;+&quot; : &quot;-&quot;) + &quot;H \&quot;&quot;</span>
+<span class="nc" id="L541">								+ file.getAbsolutePath() + &quot;\&quot;&quot;);</span>
+				// Synchronize the effect, because it is asynchronous in
+				// general.
+<span class="nc bnc" id="L544" title="All 2 branches missed.">				if (!synchronously) {</span>
+<span class="nc" id="L545">					return;</span>
+				}
+<span class="nc" id="L547">				int timeOut = 10;</span>
+<span class="nc bnc" id="L548" title="All 4 branches missed.">				while (file.isHidden() != hidden &amp;&amp; timeOut &gt; 0) {</span>
+<span class="nc" id="L549">					Thread.sleep(10/* miliseconds */);</span>
+<span class="nc" id="L550">					timeOut--;</span>
+				}
+<span class="nc" id="L552">			} catch (Exception e) {</span>
+<span class="nc" id="L553">				freemind.main.Resources.getInstance().logException(e);</span>
+			}
+		}
+<span class="fc" id="L556">	}</span>
+
+	/**
+	 * Example: expandPlaceholders(&quot;Hello $1.&quot;,&quot;Dolly&quot;); =&gt; &quot;Hello Dolly.&quot;
+	 */
+	public static String expandPlaceholders(String message, String s1) {
+<span class="fc" id="L562">		String result = message;</span>
+<span class="pc bpc" id="L563" title="1 of 2 branches missed.">		if (s1 != null) {</span>
+<span class="fc" id="L564">			s1 = s1.replaceAll(&quot;\\\\&quot;, &quot;\\\\\\\\&quot;); // Replace \ with \\</span>
+<span class="fc" id="L565">			result = result.replaceAll(&quot;\\$1&quot;, s1);</span>
+		}
+<span class="fc" id="L567">		return result;</span>
+	}
+
+	public static String expandPlaceholders(String message, String s1, String s2) {
+<span class="fc" id="L571">		String result = message;</span>
+<span class="pc bpc" id="L572" title="1 of 2 branches missed.">		if (s1 != null) {</span>
+<span class="fc" id="L573">			result = result.replaceAll(&quot;\\$1&quot;, s1);</span>
+		}
+<span class="pc bpc" id="L575" title="1 of 2 branches missed.">		if (s2 != null) {</span>
+<span class="fc" id="L576">			result = result.replaceAll(&quot;\\$2&quot;, s2);</span>
+		}
+<span class="fc" id="L578">		return result;</span>
+	}
+
+	public static String expandPlaceholders(String message, String s1,
+			String s2, String s3) {
+<span class="fc" id="L583">		String result = message;</span>
+<span class="pc bpc" id="L584" title="1 of 2 branches missed.">		if (s1 != null) {</span>
+<span class="fc" id="L585">			result = result.replaceAll(&quot;\\$1&quot;, s1);</span>
+		}
+<span class="pc bpc" id="L587" title="1 of 2 branches missed.">		if (s2 != null) {</span>
+<span class="fc" id="L588">			result = result.replaceAll(&quot;\\$2&quot;, s2);</span>
+		}
+<span class="pc bpc" id="L590" title="1 of 2 branches missed.">		if (s3 != null) {</span>
+<span class="fc" id="L591">			result = result.replaceAll(&quot;\\$3&quot;, s3);</span>
+		}
+<span class="fc" id="L593">		return result;</span>
+	}
+
+	public static class IntHolder {
+		private int value;
+
+<span class="fc" id="L599">		public IntHolder() {</span>
+<span class="fc" id="L600">		}</span>
+
+<span class="fc" id="L602">		public IntHolder(int value) {</span>
+<span class="fc" id="L603">			this.value = value;</span>
+<span class="fc" id="L604">		}</span>
+
+		public void setValue(int value) {
+<span class="fc" id="L607">			this.value = value;</span>
+<span class="fc" id="L608">		}</span>
+
+		public int getValue() {
+<span class="fc" id="L611">			return value;</span>
+		}
+
+		public String toString() {
+<span class="fc" id="L615">			return new String(&quot;IntHolder(&quot;) + value + &quot;)&quot;;</span>
+		}
+	}
+
+	public static class BooleanHolder {
+		private boolean value;
+
+<span class="fc" id="L622">		public BooleanHolder() {</span>
+<span class="fc" id="L623">		}</span>
+
+<span class="fc" id="L625">		public BooleanHolder(boolean initialValue) {</span>
+<span class="fc" id="L626">			value = initialValue;</span>
+<span class="fc" id="L627">		}</span>
+
+		public void setValue(boolean value) {
+<span class="fc" id="L630">			this.value = value;</span>
+<span class="fc" id="L631">		}</span>
+
+		public boolean getValue() {
+<span class="fc" id="L634">			return value;</span>
+		}
+	}
+
+	public static class ObjectHolder {
+		Object object;
+
+<span class="nc" id="L641">		public ObjectHolder() {</span>
+<span class="nc" id="L642">		}</span>
+
+		public void setObject(Object object) {
+<span class="nc" id="L645">			this.object = object;</span>
+<span class="nc" id="L646">		}</span>
+
+		public Object getObject() {
+<span class="nc" id="L649">			return object;</span>
+		}
+	}
+
+	public static class Pair {
+		Object first;
+
+		Object second;
+
+<span class="nc" id="L658">		public Pair(Object first, Object second) {</span>
+<span class="nc" id="L659">			this.first = first;</span>
+<span class="nc" id="L660">			this.second = second;</span>
+<span class="nc" id="L661">		}</span>
+
+		public Object getFirst() {
+<span class="nc" id="L664">			return first;</span>
+		}
+
+		public Object getSecond() {
+<span class="nc" id="L668">			return second;</span>
+		}
+	}
+
+	/** from: http://javaalmanac.com/egs/javax.crypto/PassKey.html */
+	public static class DesEncrypter {
+		private static final String SALT_PRESENT_INDICATOR = &quot; &quot;;
+		private static final int SALT_LENGTH = 8;
+
+		Cipher ecipher;
+
+		Cipher dcipher;
+
+		// 8-byte default Salt
+<span class="nc" id="L682">		byte[] salt = { (byte) 0xA9, (byte) 0x9B, (byte) 0xC8, (byte) 0x32,</span>
+<span class="nc" id="L683">				(byte) 0x56, (byte) 0x35, (byte) 0xE3, (byte) 0x03 };</span>
+
+		// Iteration count
+<span class="nc" id="L686">		int iterationCount = 19;</span>
+
+		private final char[] passPhrase;
+		private String mAlgorithm;
+
+<span class="nc" id="L691">		public DesEncrypter(StringBuffer pPassPhrase, String pAlgorithm) {</span>
+<span class="nc" id="L692">			passPhrase = new char[pPassPhrase.length()];</span>
+<span class="nc" id="L693">			pPassPhrase.getChars(0, passPhrase.length, passPhrase, 0);</span>
+<span class="nc" id="L694">			mAlgorithm = pAlgorithm;</span>
+<span class="nc" id="L695">		}</span>
+
+		/**
+		 */
+		private void init(byte[] mSalt) {
+<span class="nc bnc" id="L700" title="All 2 branches missed.">			if (mSalt != null) {</span>
+<span class="nc" id="L701">				this.salt = mSalt;</span>
+			}
+<span class="nc bnc" id="L703" title="All 2 branches missed.">			if (ecipher == null) {</span>
+				try {
+					// Create the key
+<span class="nc" id="L706">					KeySpec keySpec = new PBEKeySpec(passPhrase, salt,</span>
+<span class="nc" id="L707">							iterationCount);</span>
+<span class="nc" id="L708">					SecretKey key = SecretKeyFactory.getInstance(mAlgorithm)</span>
+<span class="nc" id="L709">							.generateSecret(keySpec);</span>
+<span class="nc" id="L710">					ecipher = Cipher.getInstance(mAlgorithm);</span>
+<span class="nc" id="L711">					dcipher = Cipher.getInstance(mAlgorithm);</span>
+
+					// Prepare the parameter to the ciphers
+<span class="nc" id="L714">					AlgorithmParameterSpec paramSpec = new PBEParameterSpec(</span>
+<span class="nc" id="L715">							salt, iterationCount);</span>
+
+					// Create the ciphers
+<span class="nc" id="L718">					ecipher.init(Cipher.ENCRYPT_MODE, key, paramSpec);</span>
+<span class="nc" id="L719">					dcipher.init(Cipher.DECRYPT_MODE, key, paramSpec);</span>
+<span class="nc" id="L720">				} catch (java.security.InvalidAlgorithmParameterException e) {</span>
+<span class="nc" id="L721">				} catch (java.security.spec.InvalidKeySpecException e) {</span>
+<span class="nc" id="L722">				} catch (javax.crypto.NoSuchPaddingException e) {</span>
+<span class="nc" id="L723">				} catch (java.security.NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L724">				} catch (java.security.InvalidKeyException e) {</span>
+				}
+			}
+<span class="nc" id="L727">		}</span>
+
+		public String encrypt(String str) {
+			try {
+				// Encode the string into bytes using utf-8
+<span class="nc" id="L732">				byte[] utf8 = str.getBytes(&quot;UTF8&quot;);</span>
+				// determine salt by random:
+<span class="nc" id="L734">				byte[] newSalt = new byte[SALT_LENGTH];</span>
+<span class="nc bnc" id="L735" title="All 2 branches missed.">				for (int i = 0; i &lt; newSalt.length; i++) {</span>
+<span class="nc" id="L736">					newSalt[i] = (byte) (Math.random() * 256l - 128l);</span>
+				}
+
+<span class="nc" id="L739">				init(newSalt);</span>
+				// Encrypt
+<span class="nc" id="L741">				byte[] enc = ecipher.doFinal(utf8);</span>
+
+				// Encode bytes to base64 to get a string
+<span class="nc" id="L744">				return Tools.toBase64(newSalt) + SALT_PRESENT_INDICATOR</span>
+<span class="nc" id="L745">						+ Tools.toBase64(enc);</span>
+<span class="nc" id="L746">			} catch (javax.crypto.BadPaddingException e) {</span>
+<span class="nc" id="L747">			} catch (IllegalBlockSizeException e) {</span>
+<span class="nc" id="L748">			} catch (UnsupportedEncodingException e) {</span>
+			}
+<span class="nc" id="L750">			return null;</span>
+		}
+
+		public String decrypt(String str) {
+<span class="nc bnc" id="L754" title="All 2 branches missed.">			if (str == null) {</span>
+<span class="nc" id="L755">				return null;</span>
+			}
+			try {
+<span class="nc" id="L758">				byte[] salt = null;</span>
+				// test if salt exists:
+<span class="nc" id="L760">				int indexOfSaltIndicator = str.indexOf(SALT_PRESENT_INDICATOR);</span>
+<span class="nc bnc" id="L761" title="All 2 branches missed.">				if (indexOfSaltIndicator &gt;= 0) {</span>
+<span class="nc" id="L762">					String saltString = str.substring(0, indexOfSaltIndicator);</span>
+<span class="nc" id="L763">					str = str.substring(indexOfSaltIndicator + 1);</span>
+<span class="nc" id="L764">					salt = Tools.fromBase64(saltString);</span>
+				}
+				// Decode base64 to get bytes
+<span class="nc" id="L767">				str = str.replaceAll(&quot;\\s&quot;, &quot;&quot;);</span>
+<span class="nc" id="L768">				byte[] dec = Tools.fromBase64(str);</span>
+<span class="nc" id="L769">				init(salt);</span>
+
+				// Decrypt
+<span class="nc" id="L772">				byte[] utf8 = dcipher.doFinal(dec);</span>
+
+				// Decode using utf-8
+<span class="nc" id="L775">				return new String(utf8, &quot;UTF8&quot;);</span>
+<span class="nc" id="L776">			} catch (javax.crypto.BadPaddingException e) {</span>
+<span class="nc" id="L777">			} catch (IllegalBlockSizeException e) {</span>
+<span class="nc" id="L778">			} catch (UnsupportedEncodingException e) {</span>
+			}
+<span class="nc" id="L780">			return null;</span>
+		}
+	}
+
+	public static class SingleDesEncrypter extends DesEncrypter {
+
+		public SingleDesEncrypter(StringBuffer pPassPhrase) {
+<span class="nc" id="L787">			super(pPassPhrase, &quot;PBEWithMD5AndDES&quot;);</span>
+<span class="nc" id="L788">		}</span>
+
+	}
+
+	public static class TripleDesEncrypter extends DesEncrypter {
+
+		public TripleDesEncrypter(StringBuffer pPassPhrase) {
+<span class="nc" id="L795">			super(pPassPhrase, &quot;PBEWithMD5AndTripleDES&quot;);</span>
+<span class="nc" id="L796">		}</span>
+
+	}
+
+	/**
+     */
+	public static String toBase64(byte[] byteBuffer) {
+<span class="fc" id="L803">		return new String(Base64Coding.encode64(byteBuffer));</span>
+	}
+
+	/** Method to be called from XSLT */
+	public static String toBase64(String text) {
+<span class="nc" id="L808">		return toBase64(text.getBytes());</span>
+	}
+
+	/**
+	 * @throws IOException
+	 */
+	public static byte[] fromBase64(String base64String) {
+<span class="fc" id="L815">		return Base64Coding.decode64(base64String);</span>
+	}
+
+	public static String compress(String message) {
+<span class="fc" id="L819">		byte[] input = uTF8StringToByteArray(message);</span>
+		// Create the compressor with highest level of compression
+<span class="fc" id="L821">		Deflater compressor = new Deflater();</span>
+<span class="fc" id="L822">		compressor.setLevel(Deflater.BEST_COMPRESSION);</span>
+
+		// Give the compressor the data to compress
+<span class="fc" id="L825">		compressor.setInput(input);</span>
+<span class="fc" id="L826">		compressor.finish();</span>
+
+		// Create an expandable byte array to hold the compressed data.
+		// You cannot use an array that's the same size as the orginal because
+		// there is no guarantee that the compressed data will be smaller than
+		// the uncompressed data.
+<span class="fc" id="L832">		ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length);</span>
+
+		// Compress the data
+<span class="fc" id="L835">		byte[] buf = new byte[1024];</span>
+<span class="fc bfc" id="L836" title="All 2 branches covered.">		while (!compressor.finished()) {</span>
+<span class="fc" id="L837">			int count = compressor.deflate(buf);</span>
+<span class="fc" id="L838">			bos.write(buf, 0, count);</span>
+		}
+		try {
+<span class="fc" id="L841">			bos.close();</span>
+<span class="pc" id="L842">		} catch (IOException e) {</span>
+		}
+
+		// Get the compressed data
+<span class="fc" id="L846">		byte[] compressedData = bos.toByteArray();</span>
+<span class="fc" id="L847">		return toBase64(compressedData);</span>
+	}
+
+	public static String decompress(String compressedMessage) {
+<span class="fc" id="L851">		byte[] compressedData = fromBase64(compressedMessage);</span>
+		// Create the decompressor and give it the data to compress
+<span class="fc" id="L853">		Inflater decompressor = new Inflater();</span>
+<span class="fc" id="L854">		decompressor.setInput(compressedData);</span>
+
+		// Create an expandable byte array to hold the decompressed data
+<span class="fc" id="L857">		ByteArrayOutputStream bos = new ByteArrayOutputStream(</span>
+<span class="fc" id="L858">				compressedData.length);</span>
+
+		// Decompress the data
+<span class="fc" id="L861">		byte[] buf = new byte[1024];</span>
+<span class="fc" id="L862">		boolean errorOccured = false;</span>
+<span class="pc bpc" id="L863" title="1 of 4 branches missed.">		while (!decompressor.finished() &amp;&amp; !errorOccured) {</span>
+			try {
+<span class="nc" id="L865">				int count = decompressor.inflate(buf);</span>
+<span class="nc" id="L866">				bos.write(buf, 0, count);</span>
+<span class="pc" id="L867">			} catch (DataFormatException e) {</span>
+<span class="fc" id="L868">				errorOccured = true;</span>
+			}
+		}
+		try {
+<span class="fc" id="L872">			bos.close();</span>
+<span class="pc" id="L873">		} catch (IOException e) {</span>
+		}
+
+		// Get the decompressed data
+<span class="fc" id="L877">		byte[] decompressedData = bos.toByteArray();</span>
+<span class="fc" id="L878">		return byteArrayToUTF8String(decompressedData);</span>
+	}
+
+	/**
+     */
+	public static String byteArrayToUTF8String(byte[] compressedData) {
+		// Decode using utf-8
+		try {
+<span class="fc" id="L886">			return new String(compressedData, &quot;UTF8&quot;);</span>
+<span class="nc" id="L887">		} catch (UnsupportedEncodingException e) {</span>
+<span class="nc" id="L888">			throw new RuntimeException(&quot;UTF8 packing not allowed&quot;);</span>
+		}
+	}
+
+	/**
+     */
+	public static byte[] uTF8StringToByteArray(String uncompressedData) {
+		// Code using utf-8
+		try {
+<span class="fc" id="L897">			return uncompressedData.getBytes(&quot;UTF8&quot;);</span>
+<span class="nc" id="L898">		} catch (UnsupportedEncodingException e) {</span>
+<span class="nc" id="L899">			throw new RuntimeException(&quot;UTF8 packing not allowed&quot;);</span>
+		}
+	}
+
+	/**
+	 * Extracts a long from xml. Only useful for dates.
+	 */
+	public static Date xmlToDate(String xmlString) {
+		try {
+<span class="nc" id="L908">			return new Date(Long.valueOf(xmlString).longValue());</span>
+<span class="fc" id="L909">		} catch (Exception e) {</span>
+<span class="fc" id="L910">			return new Date(System.currentTimeMillis());</span>
+		}
+	}
+
+	public static String dateToString(Date date) {
+<span class="fc" id="L915">		return Long.toString(date.getTime());</span>
+	}
+
+	public static boolean safeEquals(BooleanHolder holder, BooleanHolder holder2) {
+<span class="pc bpc" id="L919" title="3 of 4 branches missed.">		return (holder == null &amp;&amp; holder2 == null)</span>
+<span class="pc bpc" id="L920" title="2 of 4 branches missed.">				|| (holder != null &amp;&amp; holder2 != null &amp;&amp; holder.getValue() == holder2</span>
+<span class="fc bfc" id="L921" title="All 2 branches covered.">						.getValue());</span>
+	}
+
+	public static void setDialogLocationRelativeTo(JDialog dialog, Component c) {
+<span class="nc bnc" id="L925" title="All 2 branches missed.">		if (c == null) {</span>
+			// perhaps, the component is not yet existing.
+<span class="nc" id="L927">			return;</span>
+		}
+<span class="nc bnc" id="L929" title="All 2 branches missed.">		if (c instanceof NodeView) {</span>
+<span class="nc" id="L930">			final NodeView nodeView = (NodeView) c;</span>
+<span class="nc" id="L931">			nodeView.getMap().scrollNodeToVisible(nodeView);</span>
+<span class="nc" id="L932">			c = nodeView.getMainView();</span>
+		}
+<span class="nc" id="L934">		final Point compLocation = c.getLocationOnScreen();</span>
+<span class="nc" id="L935">		final int cw = c.getWidth();</span>
+<span class="nc" id="L936">		final int ch = c.getHeight();</span>
+
+<span class="nc" id="L938">		final Container parent = dialog.getParent();</span>
+<span class="nc" id="L939">		final Point parentLocation = parent.getLocationOnScreen();</span>
+<span class="nc" id="L940">		final int pw = parent.getWidth();</span>
+<span class="nc" id="L941">		final int ph = parent.getHeight();</span>
+
+<span class="nc" id="L943">		final int dw = dialog.getWidth();</span>
+<span class="nc" id="L944">		final int dh = dialog.getHeight();</span>
+
+<span class="nc" id="L946">		final Toolkit defaultToolkit = Toolkit.getDefaultToolkit();</span>
+<span class="nc" id="L947">		final Dimension screenSize = defaultToolkit.getScreenSize();</span>
+<span class="nc" id="L948">		final Insets screenInsets = defaultToolkit.getScreenInsets(dialog</span>
+<span class="nc" id="L949">				.getGraphicsConfiguration());</span>
+
+<span class="nc" id="L951">		final int minX = Math.max(parentLocation.x, screenInsets.left);</span>
+<span class="nc" id="L952">		final int minY = Math.max(parentLocation.y, screenInsets.top);</span>
+
+<span class="nc" id="L954">		final int maxX = Math.min(parentLocation.x + pw, screenSize.width</span>
+<span class="nc" id="L955">				- screenInsets.right);</span>
+<span class="nc" id="L956">		final int maxY = Math.min(parentLocation.y + ph, screenSize.height</span>
+<span class="nc" id="L957">				- screenInsets.bottom);</span>
+
+		int dx, dy;
+
+<span class="nc bnc" id="L961" title="All 2 branches missed.">		if (compLocation.x + cw &lt; minX) {</span>
+<span class="nc" id="L962">			dx = minX;</span>
+<span class="nc bnc" id="L963" title="All 2 branches missed.">		} else if (compLocation.x &gt; maxX) {</span>
+<span class="nc" id="L964">			dx = maxX - dw;</span>
+<span class="nc" id="L965">		} else // component X on screen</span>
+		{
+<span class="nc" id="L967">			final int leftSpace = compLocation.x - minX;</span>
+<span class="nc" id="L968">			final int rightSpace = maxX - (compLocation.x + cw);</span>
+<span class="nc bnc" id="L969" title="All 2 branches missed.">			if (leftSpace &gt; rightSpace) {</span>
+<span class="nc bnc" id="L970" title="All 2 branches missed.">				if (leftSpace &gt; dw) {</span>
+<span class="nc" id="L971">					dx = compLocation.x - dw;</span>
+<span class="nc" id="L972">				} else {</span>
+<span class="nc" id="L973">					dx = minX;</span>
+				}
+<span class="nc" id="L975">			} else {</span>
+<span class="nc bnc" id="L976" title="All 2 branches missed.">				if (rightSpace &gt; dw) {</span>
+<span class="nc" id="L977">					dx = compLocation.x + cw;</span>
+<span class="nc" id="L978">				} else {</span>
+<span class="nc" id="L979">					dx = maxX - dw;</span>
+				}
+			}
+		}
+
+<span class="nc bnc" id="L984" title="All 2 branches missed.">		if (compLocation.y + ch &lt; minY) {</span>
+<span class="nc" id="L985">			dy = minY;</span>
+<span class="nc bnc" id="L986" title="All 2 branches missed.">		} else if (compLocation.y &gt; maxY) {</span>
+<span class="nc" id="L987">			dy = maxY - dh;</span>
+<span class="nc" id="L988">		} else // component Y on screen</span>
+		{
+<span class="nc" id="L990">			final int topSpace = compLocation.y - minY;</span>
+<span class="nc" id="L991">			final int bottomSpace = maxY - (compLocation.y + ch);</span>
+<span class="nc bnc" id="L992" title="All 2 branches missed.">			if (topSpace &gt; bottomSpace) {</span>
+<span class="nc bnc" id="L993" title="All 2 branches missed.">				if (topSpace &gt; dh) {</span>
+<span class="nc" id="L994">					dy = compLocation.y - dh;</span>
+<span class="nc" id="L995">				} else {</span>
+<span class="nc" id="L996">					dy = minY;</span>
+				}
+<span class="nc" id="L998">			} else {</span>
+<span class="nc bnc" id="L999" title="All 2 branches missed.">				if (bottomSpace &gt; dh) {</span>
+<span class="nc" id="L1000">					dy = compLocation.y + ch;</span>
+<span class="nc" id="L1001">				} else {</span>
+<span class="nc" id="L1002">					dy = maxY - dh;</span>
+				}
+			}
+		}
+
+<span class="nc" id="L1007">		dialog.setLocation(dx, dy);</span>
+<span class="nc" id="L1008">	}</span>
+
+	/**
+	 * Creates a reader that pipes the input file through a XSLT-Script that
+	 * updates the version to the current.
+	 * 
+	 * @throws IOException
+	 */
+	public static Reader getUpdateReader(Reader pReader, String xsltScript,
+			FreeMindMain frame) throws IOException {
+<span class="fc" id="L1018">		StringWriter writer = null;</span>
+<span class="fc" id="L1019">		InputStream inputStream = null;</span>
+<span class="fc" id="L1020">		final java.util.logging.Logger logger = frame.getLogger(Tools.class</span>
+<span class="fc" id="L1021">				.getName());</span>
+<span class="fc" id="L1022">		logger.info(&quot;Updating the reader &quot; + pReader</span>
+<span class="fc" id="L1023">				+ &quot; to the current version.&quot;);</span>
+<span class="fc" id="L1024">		boolean successful = false;</span>
+<span class="fc" id="L1025">		String errorMessage = null;</span>
+		try {
+			// try to convert map with xslt:
+<span class="fc" id="L1028">			URL updaterUrl = null;</span>
+<span class="fc" id="L1029">			updaterUrl = frame.getResource(xsltScript);</span>
+<span class="fc bfc" id="L1030" title="All 2 branches covered.">			if (updaterUrl == null) {</span>
+<span class="fc" id="L1031">				throw new IllegalArgumentException(xsltScript + &quot; not found.&quot;);</span>
+			}
+<span class="fc" id="L1033">			inputStream = updaterUrl.openStream();</span>
+<span class="fc" id="L1034">			final Source xsltSource = new StreamSource(inputStream);</span>
+			// get output:
+<span class="fc" id="L1036">			writer = new StringWriter();</span>
+<span class="fc" id="L1037">			final Result result = new StreamResult(writer);</span>
+
+<span class="fc" id="L1039">			String fileContents = getFile(pReader);</span>
+<span class="pc bpc" id="L1040" title="1 of 2 branches missed.">			if (fileContents.length() &gt; 10) {</span>
+<span class="fc" id="L1041">				logger.info(&quot;File start before UTF8 replacement: '&quot;</span>
+<span class="fc" id="L1042">						+ fileContents.substring(0, 9) + &quot;'&quot;);</span>
+			}
+<span class="fc" id="L1044">			fileContents = replaceUtf8AndIllegalXmlChars(fileContents);</span>
+<span class="pc bpc" id="L1045" title="1 of 2 branches missed.">			if (fileContents.length() &gt; 10) {</span>
+<span class="fc" id="L1046">				logger.info(&quot;File start after UTF8 replacement: '&quot;</span>
+<span class="fc" id="L1047">						+ fileContents.substring(0, 9) + &quot;'&quot;);</span>
+			}
+<span class="fc" id="L1049">			final StreamSource sr = new StreamSource(new StringReader(</span>
+<span class="fc" id="L1050">					fileContents));</span>
+			// Dimitry: to avoid a memory leak and properly release resources
+			// after the XSLT transformation
+			// everything should run in own thread. Only after the thread dies
+			// the resources are released.
+<span class="fc" id="L1055">			class TransformerRunnable implements Runnable {</span>
+<span class="fc" id="L1056">				private boolean successful = false;</span>
+				private String errorMessage;
+
+				public void run() {
+					// create an instance of TransformerFactory
+<span class="fc" id="L1061">					TransformerFactory transFact = TransformerFactory</span>
+<span class="fc" id="L1062">							.newInstance();</span>
+<span class="fc" id="L1063">					logger.info(&quot;TransformerFactory class: &quot;</span>
+<span class="fc" id="L1064">							+ transFact.getClass());</span>
+					Transformer trans;
+					try {
+<span class="fc" id="L1067">						trans = transFact.newTransformer(xsltSource);</span>
+<span class="fc" id="L1068">						trans.transform(sr, result);</span>
+<span class="fc" id="L1069">						successful = true;</span>
+<span class="pc" id="L1070">					} catch (Exception ex) {</span>
+<span class="nc" id="L1071">						freemind.main.Resources.getInstance().logException(ex);</span>
+<span class="nc" id="L1072">						errorMessage = ex.toString();</span>
+					}
+<span class="fc" id="L1074">				}</span>
+
+				public boolean isSuccessful() {
+<span class="fc" id="L1077">					return successful;</span>
+				}
+
+				public String getErrorMessage() {
+<span class="fc" id="L1081">					return errorMessage;</span>
+				}
+			}
+<span class="fc" id="L1084">			final TransformerRunnable transformer = new TransformerRunnable();</span>
+<span class="fc" id="L1085">			Thread transformerThread = new Thread(transformer, &quot;XSLT&quot;);</span>
+<span class="fc" id="L1086">			transformerThread.start();</span>
+<span class="fc" id="L1087">			transformerThread.join();</span>
+<span class="fc" id="L1088">			logger.info(&quot;Updating the reader &quot; + pReader</span>
+<span class="fc" id="L1089">					+ &quot; to the current version. Done.&quot;); // +</span>
+															// writer.getBuffer().toString());
+<span class="fc" id="L1091">			successful = transformer.isSuccessful();</span>
+<span class="fc" id="L1092">			errorMessage = transformer.getErrorMessage();</span>
+<span class="fc" id="L1093">		} catch (Exception ex) {</span>
+<span class="fc" id="L1094">			Resources.getInstance().logException(ex, xsltScript);</span>
+<span class="fc" id="L1095">			errorMessage = ex.getLocalizedMessage();</span>
+<span class="nc" id="L1096">		} finally {</span>
+<span class="pc bpc" id="L1097" title="4 of 6 branches missed.">			if (inputStream != null) {</span>
+<span class="pc" id="L1098">				inputStream.close();</span>
+			}
+<span class="pc bpc" id="L1100" title="4 of 6 branches missed.">			if (writer != null) {</span>
+<span class="pc" id="L1101">				writer.close();</span>
+			}
+<span class="nc" id="L1103">		}</span>
+<span class="fc bfc" id="L1104" title="All 2 branches covered.">		if (successful) {</span>
+<span class="fc" id="L1105">			String content = writer.getBuffer().toString();</span>
+			// logger.info(&quot;Content before transformation: &quot; + content);
+<span class="fc" id="L1107">			String replacedContent = Tools</span>
+<span class="fc" id="L1108">					.replaceUtf8AndIllegalXmlChars(content);</span>
+			// logger.info(&quot;Content after transformation: &quot; + replacedContent);
+<span class="fc" id="L1110">			return new StringReader(replacedContent);</span>
+		} else {
+<span class="fc" id="L1112">			return new StringReader(&quot;&lt;map&gt;&lt;node TEXT='&quot;</span>
+<span class="fc" id="L1113">					+ HtmlTools.toXMLEscapedText(errorMessage) + &quot;'/&gt;&lt;/map&gt;&quot;);</span>
+		}
+	}
+
+	public static String replaceUtf8AndIllegalXmlChars(String fileContents) {
+<span class="fc" id="L1118">		return HtmlTools.removeInvalidXmlCharacters(fileContents);</span>
+	}
+
+	/**
+	 * Creates a default reader that just reads the given file.
+	 * 
+	 * @throws FileNotFoundException
+	 */
+	public static Reader getActualReader(Reader pReader)
+			throws FileNotFoundException {
+<span class="nc" id="L1128">		return new BufferedReader(pReader);</span>
+	}
+
+	/**
+	 * In case of trouble, the method returns null.
+	 * 
+	 * @param pInputFile
+	 *            the file to read.
+	 * @return the complete content of the file. or null if an exception has
+	 *         occured.
+	 */
+	public static String getFile(File pInputFile) {
+		try {
+<span class="nc" id="L1141">			return getFile(getReaderFromFile(pInputFile));</span>
+<span class="nc" id="L1142">		} catch (FileNotFoundException e) {</span>
+<span class="nc" id="L1143">			freemind.main.Resources.getInstance().logException(e);</span>
+<span class="nc" id="L1144">			return null;</span>
+		}
+	}
+
+	public static Reader getReaderFromFile(File pInputFile)
+			throws FileNotFoundException {
+<span class="nc" id="L1150">		return new FileReader(pInputFile);</span>
+	}
+
+	public static String getFile(Reader pReader) {
+<span class="fc" id="L1154">		StringBuffer lines = new StringBuffer();</span>
+<span class="fc" id="L1155">		BufferedReader bufferedReader = null;</span>
+		try {
+<span class="fc" id="L1157">			bufferedReader = new BufferedReader(pReader);</span>
+<span class="fc" id="L1158">			final String endLine = System.getProperty(&quot;line.separator&quot;);</span>
+			String line;
+<span class="fc bfc" id="L1160" title="All 2 branches covered.">			while ((line = bufferedReader.readLine()) != null) {</span>
+<span class="fc" id="L1161">				lines.append(line).append(endLine);</span>
+			}
+<span class="fc" id="L1163">			bufferedReader.close();</span>
+<span class="pc" id="L1164">		} catch (Exception e) {</span>
+<span class="nc" id="L1165">			freemind.main.Resources.getInstance().logException(e);</span>
+<span class="nc bnc" id="L1166" title="All 2 branches missed.">			if (bufferedReader != null) {</span>
+				try {
+<span class="nc" id="L1168">					bufferedReader.close();</span>
+<span class="nc" id="L1169">				} catch (Exception ex) {</span>
+<span class="nc" id="L1170">					freemind.main.Resources.getInstance().logException(ex);</span>
+				}
+			}
+<span class="nc" id="L1173">			return null;</span>
+		}
+<span class="fc" id="L1175">		return lines.toString();</span>
+	}
+
+	public static void logTransferable(Transferable t) {
+<span class="nc" id="L1179">		System.err.println();</span>
+<span class="nc" id="L1180">		System.err.println(&quot;BEGIN OF Transferable:\t&quot; + t);</span>
+<span class="nc" id="L1181">		DataFlavor[] dataFlavors = t.getTransferDataFlavors();</span>
+<span class="nc bnc" id="L1182" title="All 2 branches missed.">		for (int i = 0; i &lt; dataFlavors.length; i++) {</span>
+<span class="nc" id="L1183">			System.out.println(&quot;  Flavor:\t&quot; + dataFlavors[i]);</span>
+<span class="nc" id="L1184">			System.out.println(&quot;    Supported:\t&quot;</span>
+<span class="nc" id="L1185">					+ t.isDataFlavorSupported(dataFlavors[i]));</span>
+			try {
+<span class="nc" id="L1187">				System.out.println(&quot;    Content:\t&quot;</span>
+<span class="nc" id="L1188">						+ t.getTransferData(dataFlavors[i]));</span>
+<span class="nc" id="L1189">			} catch (Exception e) {</span>
+			}
+		}
+<span class="nc" id="L1192">		System.err.println(&quot;END OF Transferable&quot;);</span>
+<span class="nc" id="L1193">		System.err.println();</span>
+<span class="nc" id="L1194">	}</span>
+
+	public static void addEscapeActionToDialog(final JDialog dialog) {
+<span class="nc" id="L1197">		class EscapeAction extends AbstractAction {</span>
+			private static final long serialVersionUID = 238333614987438806L;
+
+			public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L1201">				dialog.dispose();</span>
+<span class="nc" id="L1202">			};</span>
+		}
+<span class="nc" id="L1204">		addEscapeActionToDialog(dialog, new EscapeAction());</span>
+<span class="nc" id="L1205">	}</span>
+
+	public static void addEscapeActionToDialog(JDialog dialog, Action action) {
+<span class="fc" id="L1208">		addKeyActionToDialog(dialog, action, &quot;ESCAPE&quot;, &quot;end_dialog&quot;);</span>
+<span class="fc" id="L1209">	}</span>
+
+	public static void addKeyActionToDialog(JDialog dialog, Action action,
+			String keyStroke, String actionId) {
+<span class="fc" id="L1213">		action.putValue(Action.NAME, actionId);</span>
+		// Register keystroke
+<span class="fc" id="L1215">		dialog.getRootPane()</span>
+<span class="fc" id="L1216">				.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)</span>
+<span class="fc" id="L1217">				.put(KeyStroke.getKeyStroke(keyStroke),</span>
+<span class="fc" id="L1218">						action.getValue(Action.NAME));</span>
+
+		// Register action
+<span class="fc" id="L1221">		dialog.getRootPane().getActionMap()</span>
+<span class="fc" id="L1222">				.put(action.getValue(Action.NAME), action);</span>
+<span class="fc" id="L1223">	}</span>
+
+	/**
+	 * Removes the &quot;TranslateMe&quot; sign from the end of not translated texts.
+	 */
+	public static String removeTranslateComment(String inputString) {
+<span class="pc bpc" id="L1229" title="1 of 2 branches missed.">		if (inputString != null</span>
+<span class="pc bpc" id="L1230" title="1 of 2 branches missed.">				&amp;&amp; inputString.endsWith(FreeMindCommon.POSTFIX_TRANSLATE_ME)) {</span>
+			// remove POSTFIX_TRANSLATE_ME:
+<span class="nc" id="L1232">			inputString = inputString.substring(0, inputString.length()</span>
+<span class="nc" id="L1233">					- FreeMindCommon.POSTFIX_TRANSLATE_ME.length());</span>
+		}
+<span class="fc" id="L1235">		return inputString;</span>
+	}
+
+	/**
+	 * Returns the same URL as input with the addition, that the reference part
+	 * &quot;#...&quot; is filtered out.
+	 * 
+	 * @throws MalformedURLException
+	 */
+	public static URL getURLWithoutReference(URL input)
+			throws MalformedURLException {
+<span class="nc" id="L1246">		return new URL(input.toString().replaceFirst(&quot;#.*&quot;, &quot;&quot;));</span>
+	}
+
+	public static void copyStream(InputStream in, OutputStream out,
+			boolean pCloseOutput) throws IOException {
+<span class="fc" id="L1251">		byte[] buf = new byte[1024];</span>
+		int len;
+<span class="fc bfc" id="L1253" title="All 2 branches covered.">		while ((len = in.read(buf)) &gt; 0) {</span>
+<span class="fc" id="L1254">			out.write(buf, 0, len);</span>
+		}
+<span class="fc" id="L1256">		in.close();</span>
+<span class="fc bfc" id="L1257" title="All 2 branches covered.">		if (pCloseOutput) {</span>
+<span class="fc" id="L1258">			out.close();</span>
+		}
+<span class="fc" id="L1260">	}</span>
+
+	public static Point convertPointToAncestor(Component c, Point p,
+			Component destination) {
+		int x, y;
+<span class="nc bnc" id="L1265" title="All 2 branches missed.">		while (c != destination) {</span>
+<span class="nc" id="L1266">			x = c.getX();</span>
+<span class="nc" id="L1267">			y = c.getY();</span>
+
+<span class="nc" id="L1269">			p.x += x;</span>
+<span class="nc" id="L1270">			p.y += y;</span>
+
+<span class="nc" id="L1272">			c = c.getParent();</span>
+		}
+<span class="nc" id="L1274">		return p;</span>
+
+	}
+
+	public static void convertPointFromAncestor(Component source, Point p,
+			Component c) {
+		int x, y;
+<span class="nc bnc" id="L1281" title="All 2 branches missed.">		while (c != source) {</span>
+<span class="nc" id="L1282">			x = c.getX();</span>
+<span class="nc" id="L1283">			y = c.getY();</span>
+
+<span class="nc" id="L1285">			p.x -= x;</span>
+<span class="nc" id="L1286">			p.y -= y;</span>
+
+<span class="nc" id="L1288">			c = c.getParent();</span>
+		}
+		;
+
+<span class="nc" id="L1292">	}</span>
+
+	public static void convertPointToAncestor(Component source, Point point,
+			Class ancestorClass) {
+<span class="nc" id="L1296">		Component destination = SwingUtilities.getAncestorOfClass(</span>
+<span class="nc" id="L1297">				ancestorClass, source);</span>
+<span class="nc" id="L1298">		convertPointToAncestor(source, point, destination);</span>
+<span class="nc" id="L1299">	}</span>
+
+	interface NameMnemonicHolder {
+
+		/**
+		 */
+		String getText();
+
+		/**
+		 */
+		void setText(String replaceAll);
+
+		/**
+		 */
+		void setMnemonic(char charAfterMnemoSign);
+
+		/**
+		 */
+		void setDisplayedMnemonicIndex(int mnemoSignIndex);
+
+	}
+
+	private static class ButtonHolder implements NameMnemonicHolder {
+		private AbstractButton btn;
+
+		public ButtonHolder(AbstractButton btn) {
+<span class="fc" id="L1325">			super();</span>
+<span class="fc" id="L1326">			this.btn = btn;</span>
+<span class="fc" id="L1327">		}</span>
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see freemind.main.Tools.IAbstractButton#getText()
+		 */
+		public String getText() {
+<span class="nc" id="L1335">			return btn.getText();</span>
+		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see
+		 * freemind.main.Tools.IAbstractButton#setDisplayedMnemonicIndex(int)
+		 */
+		public void setDisplayedMnemonicIndex(int mnemoSignIndex) {
+<span class="nc" id="L1345">			btn.setDisplayedMnemonicIndex(mnemoSignIndex);</span>
+<span class="nc" id="L1346">		}</span>
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see freemind.main.Tools.IAbstractButton#setMnemonic(char)
+		 */
+		public void setMnemonic(char charAfterMnemoSign) {
+<span class="nc" id="L1354">			btn.setMnemonic(charAfterMnemoSign);</span>
+<span class="nc" id="L1355">		}</span>
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see freemind.main.Tools.IAbstractButton#setText(java.lang.String)
+		 */
+		public void setText(String text) {
+<span class="fc" id="L1363">			btn.setText(text);</span>
+<span class="fc" id="L1364">		}</span>
+
+	}
+
+	private static class ActionHolder implements NameMnemonicHolder {
+		private Action action;
+
+		public ActionHolder(Action action) {
+<span class="fc" id="L1372">			super();</span>
+<span class="fc" id="L1373">			this.action = action;</span>
+<span class="fc" id="L1374">		}</span>
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see freemind.main.Tools.IAbstractButton#getText()
+		 */
+		public String getText() {
+<span class="nc" id="L1382">			return action.getValue(Action.NAME).toString();</span>
+		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see
+		 * freemind.main.Tools.IAbstractButton#setDisplayedMnemonicIndex(int)
+		 */
+		public void setDisplayedMnemonicIndex(int mnemoSignIndex) {
+<span class="nc" id="L1392">		}</span>
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see freemind.main.Tools.IAbstractButton#setMnemonic(char)
+		 */
+		public void setMnemonic(char charAfterMnemoSign) {
+<span class="nc" id="L1400">			int vk = (int) charAfterMnemoSign;</span>
+<span class="nc bnc" id="L1401" title="All 4 branches missed.">			if (vk &gt;= 'a' &amp;&amp; vk &lt;= 'z')</span>
+<span class="nc" id="L1402">				vk -= ('a' - 'A');</span>
+<span class="nc" id="L1403">			action.putValue(Action.MNEMONIC_KEY, new Integer(vk));</span>
+<span class="nc" id="L1404">		}</span>
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see freemind.main.Tools.IAbstractButton#setText(java.lang.String)
+		 */
+		public void setText(String text) {
+<span class="fc" id="L1412">			action.putValue(Action.NAME, text);</span>
+<span class="fc" id="L1413">		}</span>
+
+	}
+
+	public static class MindMapNodePair {
+		MindMapNode first;
+
+		MindMapNode second;
+
+<span class="nc" id="L1422">		public MindMapNodePair(MindMapNode first, MindMapNode second) {</span>
+<span class="nc" id="L1423">			this.first = first;</span>
+<span class="nc" id="L1424">			this.second = second;</span>
+<span class="nc" id="L1425">		}</span>
+
+		public MindMapNode getCorresponding() {
+<span class="nc" id="L1428">			return first;</span>
+		}
+
+		public MindMapNode getCloneNode() {
+<span class="nc" id="L1432">			return second;</span>
+		}
+	}
+
+	/**
+	 * Ampersand indicates that the character after it is a mnemo, unless the
+	 * character is a space. In &quot;Find &amp; Replace&quot;, ampersand does not label
+	 * mnemo, while in &quot;&amp;About&quot;, mnemo is &quot;Alt + A&quot;.
+	 */
+	public static void setLabelAndMnemonic(AbstractButton btn, String inLabel) {
+<span class="fc" id="L1442">		setLabelAndMnemonic(new ButtonHolder(btn), inLabel);</span>
+<span class="fc" id="L1443">	}</span>
+
+	/**
+	 * Ampersand indicates that the character after it is a mnemo, unless the
+	 * character is a space. In &quot;Find &amp; Replace&quot;, ampersand does not label
+	 * mnemo, while in &quot;&amp;About&quot;, mnemo is &quot;Alt + A&quot;.
+	 */
+	public static void setLabelAndMnemonic(Action action, String inLabel) {
+<span class="fc" id="L1451">		setLabelAndMnemonic(new ActionHolder(action), inLabel);</span>
+<span class="fc" id="L1452">	}</span>
+
+	private static void setLabelAndMnemonic(NameMnemonicHolder item,
+			String inLabel) {
+<span class="fc" id="L1456">		String rawLabel = inLabel;</span>
+<span class="pc bpc" id="L1457" title="1 of 2 branches missed.">		if (rawLabel == null)</span>
+<span class="nc" id="L1458">			rawLabel = item.getText();</span>
+<span class="pc bpc" id="L1459" title="1 of 2 branches missed.">		if (rawLabel == null)</span>
+<span class="nc" id="L1460">			return;</span>
+<span class="fc" id="L1461">		item.setText(removeMnemonic(rawLabel));</span>
+<span class="fc" id="L1462">		int mnemoSignIndex = rawLabel.indexOf(&quot;&amp;&quot;);</span>
+<span class="pc bpc" id="L1463" title="3 of 4 branches missed.">		if (mnemoSignIndex &gt;= 0 &amp;&amp; mnemoSignIndex + 1 &lt; rawLabel.length()) {</span>
+<span class="nc" id="L1464">			char charAfterMnemoSign = rawLabel.charAt(mnemoSignIndex + 1);</span>
+<span class="nc bnc" id="L1465" title="All 2 branches missed.">			if (charAfterMnemoSign != ' ') {</span>
+				// no mnemonics under Mac OS:
+<span class="nc bnc" id="L1467" title="All 2 branches missed.">				if (!isMacOsX()) {</span>
+<span class="nc" id="L1468">					item.setMnemonic(charAfterMnemoSign);</span>
+					// sets the underline to exactly this character.
+<span class="nc" id="L1470">					item.setDisplayedMnemonicIndex(mnemoSignIndex);</span>
+				}
+			}
+		}
+<span class="fc" id="L1474">	}</span>
+
+	public static boolean isMacOsX() {
+<span class="fc" id="L1477">		boolean underMac = false;</span>
+<span class="fc" id="L1478">		String osName = System.getProperty(&quot;os.name&quot;);</span>
+<span class="pc bpc" id="L1479" title="1 of 2 branches missed.">		if (osName.startsWith(&quot;Mac OS&quot;)) {</span>
+<span class="nc" id="L1480">			underMac = true;</span>
+		}
+<span class="fc" id="L1482">		return underMac;</span>
+	}
+
+	public static boolean isLinux() {
+<span class="nc" id="L1486">		boolean underLinux = false;</span>
+<span class="nc" id="L1487">		String osName = System.getProperty(&quot;os.name&quot;);</span>
+<span class="nc bnc" id="L1488" title="All 2 branches missed.">		if (osName.startsWith(&quot;Linux&quot;)) {</span>
+<span class="nc" id="L1489">			underLinux = true;</span>
+		}
+<span class="nc" id="L1491">		return underLinux;</span>
+	}
+
+	public static String removeMnemonic(String rawLabel) {
+<span class="fc" id="L1495">		return rawLabel.replaceFirst(&quot;&amp;([^ ])&quot;, &quot;$1&quot;);</span>
+	}
+
+	public static KeyStroke getKeyStroke(final String keyStrokeDescription) {
+<span class="pc bpc" id="L1499" title="1 of 2 branches missed.">		if (keyStrokeDescription == null) {</span>
+<span class="nc" id="L1500">			return null;</span>
+		}
+<span class="fc" id="L1502">		final KeyStroke keyStroke = KeyStroke</span>
+<span class="fc" id="L1503">				.getKeyStroke(keyStrokeDescription);</span>
+<span class="pc bpc" id="L1504" title="1 of 2 branches missed.">		if (keyStroke != null)</span>
+<span class="nc" id="L1505">			return keyStroke;</span>
+<span class="fc" id="L1506">		return KeyStroke.getKeyStroke(&quot;typed &quot; + keyStrokeDescription);</span>
+	}
+
+<span class="fc" id="L1509">	public static final String JAVA_VERSION = System</span>
+<span class="fc" id="L1510">			.getProperty(&quot;java.version&quot;);</span>
+
+	public static URL fileToUrl(File pFile) throws MalformedURLException {
+<span class="pc bpc" id="L1513" title="1 of 2 branches missed.">		if (pFile == null)</span>
+<span class="nc" id="L1514">			return null;</span>
+<span class="fc" id="L1515">		return pFile.toURI().toURL();</span>
+	}
+
+	public static boolean isBelowJava6() {
+<span class="pc bpc" id="L1519" title="1 of 2 branches missed.">		return JAVA_VERSION.compareTo(&quot;1.6.0&quot;) &lt; 0;</span>
+	}
+
+	public static boolean isAboveJava4() {
+<span class="pc bpc" id="L1523" title="1 of 2 branches missed.">		return JAVA_VERSION.compareTo(&quot;1.4.0&quot;) &gt; 0;</span>
+	}
+
+	public static File urlToFile(URL pUrl) throws URISyntaxException {
+		// fix for java1.4 and java5 only.
+<span class="pc bpc" id="L1528" title="1 of 2 branches missed.">		if (isBelowJava6()) {</span>
+<span class="nc" id="L1529">			return new File(urlGetFile(pUrl));</span>
+		}
+<span class="fc" id="L1531">		return new File(new URI(pUrl.toString()));</span>
+	}
+
+	public static void restoreAntialiasing(Graphics2D g, Object renderingHint) {
+<span class="nc bnc" id="L1535" title="All 2 branches missed.">		if (RenderingHints.KEY_ANTIALIASING.isCompatibleValue(renderingHint)) {</span>
+<span class="nc" id="L1536">			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, renderingHint);</span>
+		}
+<span class="nc" id="L1538">	}</span>
+
+	public static String getFileNameProposal(MindMapNode node) {
+<span class="nc" id="L1541">		String rootText = node.getPlainTextContent();</span>
+<span class="nc" id="L1542">		rootText = rootText.replaceAll(&quot;[&amp;:/\\\\\0%$#~\\?\\*]+&quot;, &quot;&quot;);</span>
+<span class="nc" id="L1543">		return rootText;</span>
+	}
+
+	public static void waitForEventQueue() {
+		try {
+			// wait until AWT thread starts
+			// final Exception e = new IllegalArgumentException(&quot;HERE&quot;);
+<span class="pc bpc" id="L1550" title="1 of 2 branches missed.">			if (!EventQueue.isDispatchThread()) {</span>
+<span class="fc" id="L1551">				EventQueue.invokeAndWait(new Runnable() {</span>
+					public void run() {
+						// logger.info(&quot;Waited for event queue.&quot;);
+						// e.printStackTrace();
+<span class="fc" id="L1555">					};</span>
+				});
+<span class="fc" id="L1557">			} else {</span>
+<span class="nc" id="L1558">				logger.warning(&quot;Can't wait for event queue, if I'm inside this queue!&quot;);</span>
+			}
+<span class="nc" id="L1560">		} catch (Exception e) {</span>
+<span class="nc" id="L1561">			freemind.main.Resources.getInstance().logException(e);</span>
+		}
+<span class="fc" id="L1563">	}</span>
+
+	/**
+	 * Logs the stacktrace via a dummy exception.
+	 */
+	public static void printStackTrace() {
+<span class="nc" id="L1569">		freemind.main.Resources.getInstance().logException(</span>
+<span class="nc" id="L1570">				new IllegalArgumentException(&quot;HERE&quot;));</span>
+<span class="nc" id="L1571">	}</span>
+
+	/**
+	 * Logs the stacktrace into a string.
+	 */
+	public static String getStackTrace() {
+<span class="nc" id="L1577">		IllegalArgumentException ex = new IllegalArgumentException(&quot;HERE&quot;);</span>
+<span class="nc" id="L1578">		ByteArrayOutputStream b = new ByteArrayOutputStream();</span>
+<span class="nc" id="L1579">		ex.printStackTrace(new PrintStream(b));</span>
+<span class="nc" id="L1580">		return b.toString();</span>
+	}
+
+	/**
+	 * Adapts the font size inside of a component to the zoom
+	 * 
+	 * @param c
+	 *            component
+	 * @param zoom
+	 *            zoom factor
+	 * @param normalFontSize
+	 *            &quot;unzoomed&quot; normal font size.
+	 * @return a copy of the input font (if the size was effectively changed)
+	 *         with the correct scale.
+	 */
+	public static Font updateFontSize(Font font, float zoom, int normalFontSize) {
+<span class="nc bnc" id="L1596" title="All 2 branches missed.">		if (font != null) {</span>
+<span class="nc" id="L1597">			float oldFontSize = font.getSize2D();</span>
+<span class="nc" id="L1598">			float newFontSize = normalFontSize * zoom;</span>
+<span class="nc bnc" id="L1599" title="All 2 branches missed.">			if (oldFontSize != newFontSize) {</span>
+<span class="nc" id="L1600">				font = font.deriveFont(newFontSize);</span>
+			}
+		}
+<span class="nc" id="L1603">		return font;</span>
+	}
+
+	public static String compareText(String pText1, String pText2) {
+<span class="pc bpc" id="L1607" title="2 of 4 branches missed.">		if (pText1 == null || pText2 == null) {</span>
+<span class="nc" id="L1608">			return &quot;One of the Strings is null &quot; + pText1 + &quot;, &quot; + pText2;</span>
+		}
+<span class="fc" id="L1610">		StringBuffer b = new StringBuffer();</span>
+<span class="pc bpc" id="L1611" title="1 of 2 branches missed.">		if (pText1.length() &gt; pText2.length()) {</span>
+<span class="nc" id="L1612">			b.append(&quot;First string is longer :&quot;</span>
+<span class="nc" id="L1613">					+ pText1.substring(pText2.length()) + &quot;\n&quot;);</span>
+		}
+<span class="pc bpc" id="L1615" title="1 of 2 branches missed.">		if (pText1.length() &lt; pText2.length()) {</span>
+<span class="nc" id="L1616">			b.append(&quot;Second string is longer :&quot;</span>
+<span class="nc" id="L1617">					+ pText2.substring(pText1.length()) + &quot;\n&quot;);</span>
+		}
+<span class="pc bpc" id="L1619" title="1 of 2 branches missed.">		for (int i = 0; i &lt; Math.min(pText1.length(), pText2.length()); i++) {</span>
+<span class="nc bnc" id="L1620" title="All 2 branches missed.">			if (pText1.charAt(i) != pText2.charAt(i)) {</span>
+<span class="nc" id="L1621">				b.append(&quot;Difference at &quot; + i + &quot;: &quot; + pText1.charAt(i) + &quot;!=&quot;</span>
+<span class="nc" id="L1622">						+ pText2.charAt(i) + &quot;\n&quot;);</span>
+			}
+
+		}
+<span class="fc" id="L1626">		return b.toString();</span>
+	}
+
+	public static String getHostName() {
+<span class="fc" id="L1630">		String hostname = &quot;UNKNOWN&quot;;</span>
+		try {
+<span class="fc" id="L1632">			InetAddress addr = InetAddress.getLocalHost();</span>
+<span class="fc" id="L1633">			hostname = addr.getHostName();</span>
+<span class="pc" id="L1634">		} catch (UnknownHostException e) {</span>
+		}
+<span class="fc" id="L1636">		return hostname;</span>
+	}
+
+	public static String getUserName() {
+		// Get host name
+<span class="fc" id="L1641">		String hostname = getHostName();</span>
+<span class="fc" id="L1642">		return System.getProperty(&quot;user.name&quot;) + &quot;@&quot; + hostname;</span>
+	}
+
+	public static String marshall(XmlAction action) {
+<span class="fc" id="L1646">		return XmlBindingTools.getInstance().marshall(action);</span>
+	}
+
+	public static XmlAction unMarshall(String inputString) {
+<span class="fc" id="L1650">		return XmlBindingTools.getInstance().unMarshall(inputString);</span>
+	}
+
+	public static String getFileNameFromRestorable(String restoreable) {
+<span class="fc" id="L1654">		StringTokenizer token = new StringTokenizer(restoreable, &quot;:&quot;);</span>
+		String fileName;
+<span class="pc bpc" id="L1656" title="1 of 2 branches missed.">		if (token.hasMoreTokens()) {</span>
+<span class="fc" id="L1657">			token.nextToken();</span>
+			// fix for windows (??, fc, 25.11.2005).
+<span class="fc" id="L1659">			fileName = token.nextToken(&quot;&quot;).substring(1);</span>
+<span class="fc" id="L1660">		} else {</span>
+<span class="nc" id="L1661">			fileName = null;</span>
+		}
+<span class="fc" id="L1663">		return fileName;</span>
+	}
+
+	public static String getModeFromRestorable(String restoreable) {
+<span class="fc" id="L1667">		StringTokenizer token = new StringTokenizer(restoreable, &quot;:&quot;);</span>
+		String mode;
+<span class="pc bpc" id="L1669" title="1 of 2 branches missed.">		if (token.hasMoreTokens()) {</span>
+<span class="fc" id="L1670">			mode = token.nextToken();</span>
+<span class="fc" id="L1671">		} else {</span>
+<span class="nc" id="L1672">			mode = null;</span>
+		}
+<span class="fc" id="L1674">		return mode;</span>
+	}
+
+	public static Vector getVectorWithSingleElement(Object obj) {
+<span class="fc" id="L1678">		Vector nodes = new Vector();</span>
+<span class="fc" id="L1679">		nodes.add(obj);</span>
+<span class="fc" id="L1680">		return nodes;</span>
+	}
+
+	public static void swapVectorPositions(Vector pVector, int src, int dst) {
+<span class="nc bnc" id="L1684" title="All 6 branches missed.">		if (src &gt;= pVector.size() || dst &gt;= pVector.size() || src &lt; 0</span>
+<span class="nc bnc" id="L1685" title="All 2 branches missed.">				|| dst &lt; 0) {</span>
+<span class="nc" id="L1686">			throw new IllegalArgumentException(&quot;One index is out of bounds &quot;</span>
+<span class="nc" id="L1687">					+ src + &quot;, &quot; + dst + &quot;, size= &quot; + pVector.size());</span>
+		}
+<span class="nc" id="L1689">		pVector.set(dst, pVector.set(src, pVector.get(dst)));</span>
+<span class="nc" id="L1690">	}</span>
+
+	public static Object getField(Object[] pObjects, String pField)
+			throws IllegalArgumentException, SecurityException,
+			IllegalAccessException, NoSuchFieldException {
+<span class="pc bpc" id="L1695" title="1 of 2 branches missed.">		for (int i = 0; i &lt; pObjects.length; i++) {</span>
+<span class="nc" id="L1696">			Object object = pObjects[i];</span>
+<span class="nc bnc" id="L1697" title="All 2 branches missed.">			for (int j = 0; j &lt; object.getClass().getFields().length; j++) {</span>
+<span class="nc" id="L1698">				Field f = object.getClass().getFields()[j];</span>
+<span class="nc bnc" id="L1699" title="All 2 branches missed.">				if (Tools.safeEquals(pField, f.getName())) {</span>
+<span class="nc" id="L1700">					return object.getClass().getField(pField).get(object);</span>
+				}
+			}
+		}
+<span class="fc" id="L1704">		return null;</span>
+	}
+
+	public static boolean isUnix() {
+<span class="pc bpc" id="L1708" title="3 of 4 branches missed.">		return (File.separatorChar == '/') || isMacOsX();</span>
+	}
+
+	// {{{ setPermissions() method
+	/**
+	 * Sets numeric permissions of a file. On non-Unix platforms, does nothing.
+	 * From jEdit
+	 */
+	public static void setPermissions(String path, int permissions) {
+
+<span class="pc bpc" id="L1718" title="1 of 2 branches missed.">		if (permissions != 0) {</span>
+<span class="pc bpc" id="L1719" title="1 of 2 branches missed.">			if (isUnix()) {</span>
+<span class="fc" id="L1720">				String[] cmdarray = { &quot;chmod&quot;,</span>
+<span class="fc" id="L1721">						Integer.toString(permissions, 8), path };</span>
+
+				try {
+<span class="fc" id="L1724">					Process process = Runtime.getRuntime().exec(cmdarray);</span>
+<span class="fc" id="L1725">					process.getInputStream().close();</span>
+<span class="fc" id="L1726">					process.getOutputStream().close();</span>
+<span class="fc" id="L1727">					process.getErrorStream().close();</span>
+					// Jun 9 2004 12:40 PM
+					// waitFor() hangs on some Java
+					// implementations.
+					/*
+					 * int exitCode = process.waitFor(); if(exitCode != 0)
+					 * Log.log
+					 * (Log.NOTICE,FileVFS.class,&quot;chmod exited with code &quot; +
+					 * exitCode);
+					 */
+<span class="fc" id="L1737">				}</span>
+
+				// Feb 4 2000 5:30 PM
+				// Catch Throwable here rather than Exception.
+				// Kaffe's implementation of Runtime.exec throws
+				// java.lang.InternalError.
+<span class="nc" id="L1743">				catch (Throwable t) {</span>
+				}
+			}
+		}
+<span class="fc" id="L1747">	} // }}}</span>
+
+	public static String arrayToUrls(String[] pArgs) {
+<span class="fc" id="L1750">		StringBuffer b = new StringBuffer();</span>
+<span class="fc bfc" id="L1751" title="All 2 branches covered.">		for (int i = 0; i &lt; pArgs.length; i++) {</span>
+<span class="fc" id="L1752">			String fileName = pArgs[i];</span>
+			try {
+<span class="fc" id="L1754">				b.append(fileToUrl(new File(fileName)));</span>
+<span class="fc" id="L1755">				b.append('\n');</span>
+<span class="pc" id="L1756">			} catch (MalformedURLException e) {</span>
+<span class="nc" id="L1757">				freemind.main.Resources.getInstance().logException(e);</span>
+			}
+		}
+<span class="fc" id="L1760">		return b.toString();</span>
+	}
+
+	public static Vector/* &lt;URL&gt; */urlStringToUrls(String pUrls) {
+<span class="fc" id="L1764">		String[] urls = pUrls.split(&quot;\n&quot;);</span>
+<span class="fc" id="L1765">		Vector ret = new Vector();</span>
+<span class="fc bfc" id="L1766" title="All 2 branches covered.">		for (int i = 0; i &lt; urls.length; i++) {</span>
+<span class="fc" id="L1767">			String url = urls[i];</span>
+			try {
+<span class="fc" id="L1769">				ret.add(new URL(url));</span>
+<span class="fc" id="L1770">			} catch (MalformedURLException e) {</span>
+<span class="fc" id="L1771">				freemind.main.Resources.getInstance().logException(e);</span>
+			}
+		}
+<span class="fc" id="L1774">		return ret;</span>
+	}
+
+	/**
+	 * @return
+	 */
+	public static boolean isHeadless() {
+<span class="fc" id="L1781">		return GraphicsEnvironment.getLocalGraphicsEnvironment().isHeadless();</span>
+	}
+
+	/**
+	 * @param pNode
+	 * @param pMindMapController
+	 * @return
+	 */
+	public static String getNodeTextHierarchy(MindMapNode pNode,
+			MindMapController pMindMapController) {
+<span class="nc" id="L1791">		return pNode.getShortText(pMindMapController)</span>
+<span class="nc bnc" id="L1792" title="All 2 branches missed.">				+ ((pNode.isRoot()) ? &quot;&quot; : (&quot; &lt;- &quot; + getNodeTextHierarchy(</span>
+<span class="nc" id="L1793">						pNode.getParentNode(), pMindMapController)));</span>
+	}
+
+	/**
+     */
+	public static Clipboard getClipboard() {
+<span class="fc" id="L1799">		return Toolkit.getDefaultToolkit().getSystemClipboard();</span>
+	}
+
+	public static void addFocusPrintTimer() {
+<span class="fc" id="L1803">		Timer timer = new Timer(1000, new ActionListener() {</span>
+
+			public void actionPerformed(ActionEvent pE) {
+<span class="fc" id="L1806">				logger.info(&quot;Component: &quot;</span>
+<span class="fc" id="L1807">						+ KeyboardFocusManager.getCurrentKeyboardFocusManager()</span>
+<span class="fc" id="L1808">								.getFocusOwner()</span>
+<span class="fc" id="L1809">						+ &quot;, Window: &quot;</span>
+<span class="fc" id="L1810">						+ KeyboardFocusManager.getCurrentKeyboardFocusManager()</span>
+<span class="fc" id="L1811">								.getFocusedWindow());</span>
+<span class="fc" id="L1812">			}</span>
+		});
+<span class="fc" id="L1814">		timer.start();</span>
+
+<span class="fc" id="L1816">	}</span>
+
+	/**
+	 * copied from HomePane.java 15 mai 2006
+	 * 
+	 * Sweet Home 3D, Copyright (c) 2006 Emmanuel PUYBARET / eTeks
+	 * &lt;info@eteks.com&gt;
+	 * 
+	 * - This listener manages accelerator keys that may require the use of
+	 * shift key depending on keyboard layout (like + - or ?)
+	 */
+	public static void invokeActionsToKeyboardLayoutDependantCharacters(
+			KeyEvent pEvent, Action[] specialKeyActions, Object pObject) {
+		// on purpose without shift.
+<span class="nc" id="L1830">		int modifiersMask = KeyEvent.ALT_MASK | KeyEvent.CTRL_MASK</span>
+				| KeyEvent.META_MASK;
+<span class="nc bnc" id="L1832" title="All 2 branches missed.">		for (int i = 0; i &lt; specialKeyActions.length; i++) {</span>
+<span class="nc" id="L1833">			Action specialKeyAction = specialKeyActions[i];</span>
+<span class="nc" id="L1834">			KeyStroke actionKeyStroke = (KeyStroke) specialKeyAction</span>
+<span class="nc" id="L1835">					.getValue(Action.ACCELERATOR_KEY);</span>
+<span class="nc bnc" id="L1836" title="All 2 branches missed.">			if (pEvent.getKeyChar() == actionKeyStroke.getKeyChar()</span>
+<span class="nc bnc" id="L1837" title="All 2 branches missed.">					&amp;&amp; (pEvent.getModifiers() &amp; modifiersMask) == (actionKeyStroke</span>
+<span class="nc" id="L1838">							.getModifiers() &amp; modifiersMask)</span>
+<span class="nc bnc" id="L1839" title="All 2 branches missed.">					&amp;&amp; specialKeyAction.isEnabled()) {</span>
+<span class="nc" id="L1840">				specialKeyAction.actionPerformed(new ActionEvent(pObject,</span>
+<span class="nc" id="L1841">						ActionEvent.ACTION_PERFORMED, (String) specialKeyAction</span>
+<span class="nc" id="L1842">								.getValue(Action.ACTION_COMMAND_KEY)));</span>
+<span class="nc" id="L1843">				pEvent.consume();</span>
+			}
+		}
+<span class="nc" id="L1846">	}</span>
+
+	/**
+	 * @param pString
+	 * @param pSearchString
+	 * @return the amount of occurrences of pSearchString in pString.
+	 */
+	public static int countOccurrences(String pString, String pSearchString) {
+<span class="fc" id="L1854">		int amount = 0;</span>
+<span class="fc" id="L1855">		while (true) {</span>
+<span class="fc" id="L1856">			final int index = pString.indexOf(pSearchString);</span>
+<span class="fc bfc" id="L1857" title="All 2 branches covered.">			if (index &lt; 0) {</span>
+<span class="fc" id="L1858">				break;</span>
+			}
+<span class="fc" id="L1860">			amount++;</span>
+<span class="fc" id="L1861">			pString = pString.substring(index + pSearchString.length());</span>
+		}
+<span class="fc" id="L1863">		return amount;</span>
+	}
+
+	public static void correctJSplitPaneKeyMap() {
+<span class="fc" id="L1867">		InputMap map = (InputMap) UIManager.get(&quot;SplitPane.ancestorInputMap&quot;);</span>
+<span class="fc" id="L1868">		KeyStroke keyStrokeF6 = KeyStroke.getKeyStroke(KeyEvent.VK_F6, 0);</span>
+<span class="fc" id="L1869">		KeyStroke keyStrokeF8 = KeyStroke.getKeyStroke(KeyEvent.VK_F8, 0);</span>
+<span class="fc" id="L1870">		map.remove(keyStrokeF6);</span>
+<span class="fc" id="L1871">		map.remove(keyStrokeF8);</span>
+<span class="fc" id="L1872">	}</span>
+
+	/**
+	 * @param pPageFormat
+	 * @param pPageFormatProperty
+	 */
+	public static void setPageFormatFromString(Paper pPaper,
+			String pPageFormatProperty) {
+		try {
+			// parse string:
+<span class="fc" id="L1882">			StringTokenizer tokenizer = new StringTokenizer(</span>
+<span class="fc" id="L1883">					pPageFormatProperty, &quot;;&quot;);</span>
+<span class="pc bpc" id="L1884" title="1 of 2 branches missed.">			if (tokenizer.countTokens() != 6) {</span>
+<span class="nc" id="L1885">				logger.warning(&quot;Page format property has not the correct format:&quot;</span>
+<span class="nc" id="L1886">						+ pPageFormatProperty);</span>
+<span class="nc" id="L1887">				return;</span>
+			}
+<span class="fc" id="L1889">			pPaper.setSize(nt(tokenizer), nt(tokenizer));</span>
+<span class="fc" id="L1890">			pPaper.setImageableArea(nt(tokenizer), nt(tokenizer),</span>
+<span class="fc" id="L1891">					nt(tokenizer), nt(tokenizer));</span>
+<span class="pc" id="L1892">		} catch (Exception e) {</span>
+<span class="nc" id="L1893">			freemind.main.Resources.getInstance().logException(e);</span>
+		}
+<span class="fc" id="L1895">	}</span>
+
+	/**
+	 * @param pTokenizer
+	 * @return
+	 */
+	private static double nt(StringTokenizer pTokenizer) {
+<span class="fc" id="L1902">		String nextToken = pTokenizer.nextToken();</span>
+		try {
+<span class="fc" id="L1904">			return Double.parseDouble(nextToken);</span>
+<span class="nc" id="L1905">		} catch (Exception e) {</span>
+<span class="nc" id="L1906">			freemind.main.Resources.getInstance().logException(e);</span>
+		}
+<span class="nc" id="L1908">		return 0;</span>
+	}
+
+	/**
+	 * @param pPageFormat
+	 * @return
+	 */
+	public static String getPageFormatAsString(Paper pPaper) {
+<span class="fc" id="L1916">		return pPaper.getWidth() + &quot;;&quot; + pPaper.getHeight() + &quot;;&quot;</span>
+<span class="fc" id="L1917">				+ pPaper.getImageableX() + &quot;;&quot; + pPaper.getImageableY() + &quot;;&quot;</span>
+<span class="fc" id="L1918">				+ pPaper.getImageableWidth() + &quot;;&quot;</span>
+<span class="fc" id="L1919">				+ pPaper.getImageableHeight();</span>
+	}
+
+	/**
+	 * @return
+	 */
+	public static String getHostIpAsString() {
+		try {
+<span class="fc" id="L1927">			return InetAddress.getLocalHost().getHostAddress();</span>
+<span class="nc" id="L1928">		} catch (UnknownHostException e) {</span>
+<span class="nc" id="L1929">			freemind.main.Resources.getInstance().logException(e);</span>
+		}
+<span class="nc" id="L1931">		return null;</span>
+	}
+
+	public static String printXmlAction(XmlAction pAction) {
+<span class="nc" id="L1935">		final String classString = pAction.getClass().getName()</span>
+<span class="nc" id="L1936">				.replaceAll(&quot;.*\\.&quot;, &quot;&quot;);</span>
+<span class="nc bnc" id="L1937" title="All 2 branches missed.">		if (pAction instanceof CompoundAction) {</span>
+<span class="nc" id="L1938">			CompoundAction compound = (CompoundAction) pAction;</span>
+<span class="nc" id="L1939">			StringBuffer buf = new StringBuffer(&quot;[&quot;);</span>
+<span class="nc" id="L1940">			for (Iterator it = compound.getListChoiceList().iterator(); it</span>
+<span class="nc bnc" id="L1941" title="All 2 branches missed.">					.hasNext();) {</span>
+<span class="nc bnc" id="L1942" title="All 2 branches missed.">				if (buf.length() &gt; 1) {</span>
+<span class="nc" id="L1943">					buf.append(',');</span>
+				}
+<span class="nc" id="L1945">				XmlAction subAction = (XmlAction) it.next();</span>
+<span class="nc" id="L1946">				buf.append(printXmlAction(subAction));</span>
+			}
+<span class="nc" id="L1948">			buf.append(']');</span>
+<span class="nc" id="L1949">			return classString + &quot; &quot; + buf.toString();</span>
+		}
+<span class="nc" id="L1951">		return classString;</span>
+	}
+
+	public static XmlAction deepCopy(XmlAction action) {
+<span class="nc" id="L1955">		return (XmlAction) unMarshall(marshall(action));</span>
+	}
+
+	public static String generateID(String proposedID, HashMap hashMap,
+			String prefix) {
+<span class="pc bpc" id="L1960" title="1 of 2 branches missed.">		String myProposedID = new String((proposedID != null) ? proposedID : &quot;&quot;);</span>
+		String returnValue;
+		do {
+<span class="fc bfc" id="L1963" title="All 2 branches covered.">			if (!myProposedID.isEmpty()) {</span>
+				// there is a proposal:
+<span class="fc" id="L1965">				returnValue = myProposedID;</span>
+				// this string is tried only once:
+<span class="fc" id="L1967">				myProposedID = &quot;&quot;;</span>
+<span class="fc" id="L1968">			} else {</span>
+				/*
+				 * The prefix is to enable the id to be an ID in the sense of
+				 * XML/DTD.
+				 */
+<span class="fc" id="L1973">				returnValue = prefix</span>
+<span class="fc" id="L1974">						+ Integer.toString(Tools.ran.nextInt(2000000000));</span>
+			}
+<span class="pc bpc" id="L1976" title="1 of 2 branches missed.">		} while (hashMap.containsKey(returnValue));</span>
+<span class="fc" id="L1977">		return returnValue;</span>
+	}
+
+	/**
+	 * Call this method, if you don't know, if you are in the event thread or
+	 * not. It checks this and calls the invokeandwait or the runnable directly.
+	 * 
+	 * @param pRunnable
+	 * @throws InterruptedException
+	 * @throws InvocationTargetException
+	 */
+	public static void invokeAndWait(Runnable pRunnable)
+			throws InvocationTargetException, InterruptedException {
+<span class="nc bnc" id="L1990" title="All 2 branches missed.">		if (EventQueue.isDispatchThread()) {</span>
+<span class="nc" id="L1991">			pRunnable.run();</span>
+<span class="nc" id="L1992">		} else {</span>
+<span class="nc" id="L1993">			EventQueue.invokeAndWait(pRunnable);</span>
+		}
+<span class="nc" id="L1995">	}</span>
+
+	public static String getFreeMindBasePath()
+			throws UnsupportedEncodingException {
+<span class="fc" id="L1999">		String path = FreeMindStarter.class.getProtectionDomain()</span>
+<span class="fc" id="L2000">				.getCodeSource().getLocation().getPath();</span>
+<span class="fc" id="L2001">		String decodedPath = URLDecoder.decode(path, &quot;UTF-8&quot;);</span>
+<span class="fc" id="L2002">		logger.info(&quot;Path: &quot; + decodedPath);</span>
+<span class="pc bpc" id="L2003" title="1 of 2 branches missed.">		if (decodedPath.endsWith(CONTENTS_JAVA_FREEMIND_JAR)) {</span>
+<span class="nc" id="L2004">			decodedPath = decodedPath.substring(0, decodedPath.length()</span>
+<span class="nc" id="L2005">					- CONTENTS_JAVA_FREEMIND_JAR.length());</span>
+<span class="nc" id="L2006">			decodedPath = decodedPath + FREE_MIND_APP_CONTENTS_RESOURCES_JAVA;</span>
+<span class="nc" id="L2007">			logger.info(&quot;macPath: &quot; + decodedPath);</span>
+<span class="pc bpc" id="L2008" title="1 of 2 branches missed.">		} else if (decodedPath.endsWith(FREEMIND_LIB_FREEMIND_JAR)) {</span>
+<span class="nc" id="L2009">			decodedPath = decodedPath.substring(0, decodedPath.length()</span>
+<span class="nc" id="L2010">					- FREEMIND_LIB_FREEMIND_JAR.length());</span>
+<span class="nc" id="L2011">			logger.info(&quot;reducded Path: &quot; + decodedPath);</span>
+		}
+<span class="fc" id="L2013">		return decodedPath;</span>
+	}
+
+	public static Properties copyChangedProperties(Properties props2,
+			Properties defProps2) {
+<span class="fc" id="L2018">		Properties toBeStored = new Properties();</span>
+<span class="fc bfc" id="L2019" title="All 2 branches covered.">		for (Iterator it = props2.keySet().iterator(); it.hasNext();) {</span>
+<span class="fc" id="L2020">			String key = (String) it.next();</span>
+<span class="fc bfc" id="L2021" title="All 2 branches covered.">			if (!safeEquals(props2.get(key), defProps2.get(key))) {</span>
+<span class="fc" id="L2022">				toBeStored.put(key, props2.get(key));</span>
+			}
+		}
+<span class="fc" id="L2025">		return toBeStored;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span>FreeMind_integration (Aug 16, 2014 3:57:47 PM)</div></body></html>

@@ -1,0 +1,581 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../.resources/report.gif" type="image/gif"/><title>Registration.java</title><link rel="stylesheet" href="../../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../.sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FreeMind_integration (Aug 16, 2014 2:28:58 PM)</a> &gt; <a href="../../index.html" class="el_group">FreeMind_integration</a> &gt; <a href="../index.html" class="el_bundle">FreeMind_integration</a> &gt; <a href="index.source.html" class="el_package">plugins.map</a> &gt; <span class="el_source">Registration.java</span></div><h1>Registration.java</h1><pre class="source lang-java linenums">/*FreeMind - A Program for creating and viewing Mindmaps
+ *Copyright (C) 2000-2011 Joerg Mueller, Daniel Polansky, Christian Foltin, Dimitri Polivaev and others.
+ *
+ *See COPYING for Details
+ *
+ *This program is free software; you can redistribute it and/or
+ *modify it under the terms of the GNU General Public License
+ *as published by the Free Software Foundation; either version 2
+ *of the License, or (at your option) any later version.
+ *
+ *This program is distributed in the hope that it will be useful,
+ *but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *GNU General Public License for more details.
+ *
+ *You should have received a copy of the GNU General Public License
+ *along with this program; if not, write to the Free Software
+ *Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
+
+package plugins.map;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.Vector;
+
+import javax.swing.Action;
+import javax.swing.JMenuItem;
+
+import org.openstreetmap.gui.jmapviewer.Coordinate;
+import org.openstreetmap.gui.jmapviewer.MemoryTileCache;
+import org.openstreetmap.gui.jmapviewer.OsmFileCacheTileLoader;
+import org.openstreetmap.gui.jmapviewer.OsmMercator;
+import org.openstreetmap.gui.jmapviewer.OsmTileLoader;
+import org.openstreetmap.gui.jmapviewer.Tile;
+import org.openstreetmap.gui.jmapviewer.TileController;
+import org.openstreetmap.gui.jmapviewer.interfaces.TileCache;
+import org.openstreetmap.gui.jmapviewer.interfaces.TileLoaderListener;
+import org.openstreetmap.gui.jmapviewer.interfaces.TileSource;
+import org.openstreetmap.gui.jmapviewer.tilesources.OsmTileSource;
+
+import plugins.map.MapNodePositionHolder.MapNodePositionListener;
+import freemind.common.BooleanProperty;
+import freemind.common.DontShowNotificationProperty;
+import freemind.common.SeparatorProperty;
+import freemind.common.TextTranslator;
+import freemind.controller.MenuItemEnabledListener;
+import freemind.controller.actions.generated.instance.PlaceNodeXmlAction;
+import freemind.controller.actions.generated.instance.XmlAction;
+import freemind.extensions.HookRegistration;
+import freemind.main.FreeMind;
+import freemind.main.FreeMindMain.VersionInformation;
+import freemind.main.Resources;
+import freemind.main.Tools;
+import freemind.main.Tools.IntHolder;
+import freemind.modes.MindMap;
+import freemind.modes.MindMapNode;
+import freemind.modes.ModeController;
+import freemind.modes.mindmapmode.MindMapController;
+import freemind.modes.mindmapmode.actions.NodeHookAction;
+import freemind.modes.mindmapmode.actions.xml.ActionFactory;
+import freemind.modes.mindmapmode.actions.xml.ActionPair;
+import freemind.modes.mindmapmode.actions.xml.ActorXml;
+import freemind.preferences.FreemindPropertyContributor;
+import freemind.preferences.layout.OptionPanel;
+
+public class Registration implements HookRegistration, ActorXml,
+		TileLoaderListener, MenuItemEnabledListener {
+
+	/**
+	 * 
+	 * Clean the file cache periodically.
+	 * 
+	 * @author foltin
+	 * @date 27.04.2012
+	 */
+	public class CachePurger extends TimerTask {
+
+		/**
+		 * @author foltin
+		 * @date 27.04.2012
+		 */
+		private final class AgeFilter implements FileFilter {
+			private final long mYoungestFileToAccept;
+
+<span class="nc" id="L93">			public AgeFilter(long pYoungestFileToAccept) {</span>
+<span class="nc" id="L94">				mYoungestFileToAccept = pYoungestFileToAccept;</span>
+<span class="nc" id="L95">			}</span>
+
+			public boolean accept(File pPathname) {
+<span class="nc bnc" id="L98" title="All 4 branches missed.">				return pPathname.getName().endsWith(&quot;.tags&quot;)</span>
+<span class="nc" id="L99">						&amp;&amp; pPathname.lastModified() &lt;= mYoungestFileToAccept;</span>
+			}
+		}
+
+		private final File mCacheDirectory;
+		private final long mCacheMaxAge;
+
+		/**
+		 * @param pCacheDirectory
+		 * @param pCacheMaxAge
+		 */
+<span class="nc" id="L110">		public CachePurger(File pCacheDirectory, long pCacheMaxAge) {</span>
+<span class="nc" id="L111">			mCacheDirectory = pCacheDirectory;</span>
+<span class="nc" id="L112">			mCacheMaxAge = pCacheMaxAge;</span>
+<span class="nc" id="L113">		}</span>
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see java.util.TimerTask#run()
+		 */
+		public void run() {
+			// the jobs must not overtake themselves.
+<span class="nc" id="L122">			synchronized (mCachePurgerSemaphore) {</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">				if (mCachePurgerSemaphore.getValue() &gt; 0) {</span>
+<span class="nc" id="L124">					return;</span>
+				}
+<span class="nc" id="L126">				mCachePurgerSemaphore.setValue(1);</span>
+			}
+			try {
+<span class="nc" id="L129">				logger.info(&quot;Start purging for &quot; + mCacheDirectory);</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">				if (mCacheDirectory.exists()) {</span>
+<span class="nc" id="L131">					File[] cacheDirectories = mCacheDirectory.listFiles();</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">					for (int i = 0; i &lt; cacheDirectories.length; i++) {</span>
+<span class="nc" id="L133">						File cacheDirectory = cacheDirectories[i];</span>
+<span class="nc" id="L134">						purgeDirectory(cacheDirectory);</span>
+
+					}
+				}
+<span class="nc" id="L138">				logger.info(&quot;Finished purging&quot;);</span>
+<span class="nc" id="L139">			} finally {</span>
+<span class="nc" id="L140">				mCachePurgerSemaphore.setValue(0);</span>
+<span class="nc" id="L141">			}</span>
+<span class="nc" id="L142">		}</span>
+
+		/**
+		 * @param pCacheDirectory
+		 */
+		private void purgeDirectory(File pCacheDirectory) {
+<span class="nc" id="L148">			logger.fine(&quot;Start purging for subdir &quot; + pCacheDirectory);</span>
+<span class="nc" id="L149">			File[] listTagFiles = pCacheDirectory.listFiles(new AgeFilter(</span>
+<span class="nc" id="L150">					System.currentTimeMillis() - mCacheMaxAge));</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">			if (listTagFiles == null) {</span>
+<span class="nc" id="L152">				return;</span>
+			}
+<span class="nc bnc" id="L154" title="All 2 branches missed.">			for (int i = 0; i &lt; listTagFiles.length; i++) {</span>
+<span class="nc" id="L155">				File tagFile = listTagFiles[i];</span>
+<span class="nc" id="L156">				File imageFile = new File(tagFile.getPath().replace(&quot;.tags&quot;,</span>
+<span class="nc" id="L157">						&quot;.png&quot;));</span>
+				try {
+<span class="nc" id="L159">					logger.finest(&quot;Deleting &quot; + tagFile);</span>
+<span class="nc" id="L160">					logger.finest(&quot;Deleting &quot; + imageFile);</span>
+<span class="nc" id="L161">					tagFile.delete();</span>
+<span class="nc" id="L162">					imageFile.delete();</span>
+<span class="nc" id="L163">				} catch (Exception e) {</span>
+<span class="nc" id="L164">					freemind.main.Resources.getInstance().logException(e);</span>
+				}
+			}
+<span class="nc" id="L167">		}</span>
+
+	}
+
+<span class="nc" id="L171">	private static final String PLUGINS_MAP_NODE_POSITION = MapNodePositionHolder.class</span>
+<span class="nc" id="L172">			.getName();</span>
+
+	/*
+	 * Collects MapNodePositionHolder. This is necessary to be able to display
+	 * them all efficiently.
+	 */
+<span class="nc" id="L178">	private HashSet/* MapNodePositionHolder s */mMapNodePositionHolders = new HashSet();</span>
+
+<span class="nc" id="L180">	private HashSet mMapNodePositionListeners = new HashSet();</span>
+
+	private final MindMapController controller;
+
+	private final MindMap mMap;
+
+	private final java.util.logging.Logger logger;
+
+	private TileSource mTileSource;
+
+	private TileController mTileController;
+
+	private MemoryTileCache mTileCache;
+
+<span class="nc" id="L194">	private MapDialog mMapDialog = null;</span>
+
+	private MapDialogPropertyContributor mOptionContributor;
+
+	private static Timer sTimer;
+
+<span class="nc" id="L200">	private static Boolean sTimerSemaphore = new Boolean(false);</span>
+
+<span class="nc" id="L202">	private IntHolder mCachePurgerSemaphore = new IntHolder(0);</span>
+
+	private static final class MapDialogPropertyContributor implements
+			FreemindPropertyContributor {
+
+		private final MindMapController modeController;
+
+<span class="nc" id="L209">		public MapDialogPropertyContributor(MindMapController modeController) {</span>
+<span class="nc" id="L210">			this.modeController = modeController;</span>
+<span class="nc" id="L211">		}</span>
+
+		public List getControls(TextTranslator pTextTranslator) {
+<span class="nc" id="L214">			Vector controls = new Vector();</span>
+<span class="nc" id="L215">			controls.add(new OptionPanel.NewTabProperty(</span>
+<span class="nc" id="L216">					&quot;plugins/map/MapDialog.properties_MapDialogTabName&quot;));</span>
+<span class="nc" id="L217">			controls.add(new SeparatorProperty(</span>
+<span class="nc" id="L218">					&quot;plugins/map/MapDialog.properties_PatternSeparatorName&quot;));</span>
+<span class="nc" id="L219">			controls.add(new BooleanProperty(&quot;node_map_show_tooltip.tooltip&quot;,</span>
+<span class="nc" id="L220">					&quot;node_map_show_tooltip&quot;));</span>
+<span class="nc" id="L221">			controls.add(new DontShowNotificationProperty(</span>
+<span class="nc" id="L222">					&quot;resources_search_for_node_text_without_question.tooltip&quot;,</span>
+<span class="nc" id="L223">					FreeMind.RESOURCES_SEARCH_FOR_NODE_TEXT_WITHOUT_QUESTION));</span>
+<span class="nc" id="L224">			return controls;</span>
+		}
+	}
+
+<span class="nc" id="L228">	public Registration(ModeController controller, MindMap map) {</span>
+<span class="nc" id="L229">		this.controller = (MindMapController) controller;</span>
+<span class="nc" id="L230">		mMap = map;</span>
+<span class="nc" id="L231">		logger = controller.getFrame().getLogger(this.getClass().getName());</span>
+<span class="nc" id="L232">		mTileSource = new OsmTileSource.Mapnik();</span>
+<span class="nc" id="L233">		mTileCache = new MemoryTileCache();</span>
+<span class="nc" id="L234">		mTileController = new TileController(mTileSource, mTileCache, this);</span>
+<span class="nc" id="L235">		mTileController.setTileLoader(createTileLoader(this));</span>
+<span class="nc" id="L236">		mOptionContributor = new MapDialogPropertyContributor(this.controller);</span>
+
+<span class="nc" id="L238">		synchronized (sTimerSemaphore) {</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">			if (sTimer == null) {</span>
+				// only once in the system
+<span class="nc" id="L241">				sTimer = new Timer();</span>
+<span class="nc" id="L242">				long purgeTime = Resources.getInstance().getLongProperty(</span>
+<span class="nc" id="L243">						MapDialog.TILE_CACHE_PURGE_TIME,</span>
+<span class="nc" id="L244">						MapDialog.TILE_CACHE_PURGE_TIME_DEFAULT);</span>
+<span class="nc" id="L245">				sTimer.schedule(new CachePurger(getCacheDirectory(),</span>
+<span class="nc" id="L246">						getCacheMaxAge()), purgeTime, purgeTime);</span>
+			}
+		}
+
+<span class="nc" id="L250">	}</span>
+
+	/**
+	 * @param pPosition
+	 * @param pTileSource
+	 */
+	public TileImage getImageForTooltip(Coordinate pPosition, int pZoom,
+			String pTileSource) {
+<span class="nc" id="L258">		TileSource tileSource = FreeMindMapController.changeTileSource(</span>
+<span class="nc" id="L259">				pTileSource, null);</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">		if (tileSource != null) {</span>
+<span class="nc" id="L261">			mTileSource = tileSource;</span>
+<span class="nc" id="L262">			mTileController.setTileSource(tileSource);</span>
+		}
+<span class="nc" id="L264">		int tileSize = mTileSource.getTileSize();</span>
+<span class="nc" id="L265">		int exactx = OsmMercator.LonToX(pPosition.getLon(), pZoom);</span>
+<span class="nc" id="L266">		int exacty = OsmMercator.LatToY(pPosition.getLat(), pZoom);</span>
+<span class="nc" id="L267">		int x = exactx / tileSize;</span>
+<span class="nc" id="L268">		int y = exacty / tileSize;</span>
+		// determine other surrounding tiles that are close to the exact
+		// point.
+<span class="nc" id="L271">		int dx = exactx % tileSize;</span>
+<span class="nc" id="L272">		int dy = exacty % tileSize;</span>
+		// determine quadrant of cursor in tile:
+<span class="nc bnc" id="L274" title="All 2 branches missed.">		if (dx &lt; tileSize / 2) {</span>
+<span class="nc" id="L275">			x -= 1;</span>
+<span class="nc" id="L276">			dx += tileSize;</span>
+		}
+<span class="nc bnc" id="L278" title="All 2 branches missed.">		if (dy &lt; tileSize / 2) {</span>
+<span class="nc" id="L279">			y -= 1;</span>
+<span class="nc" id="L280">			dy += tileSize;</span>
+		}
+<span class="nc" id="L282">		TileImage tileImage = new TileImage();</span>
+<span class="nc" id="L283">		tileImage.setTiles(2, x, y, pZoom, mTileController, logger, dx, dy);</span>
+		// wait for tiles:
+<span class="nc" id="L285">		int timeout = 60;</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">		while (timeout-- &gt; 0) {</span>
+			try {
+<span class="nc bnc" id="L288" title="All 4 branches missed.">				if (tileImage.isLoaded() || tileImage.hasErrors()) {</span>
+<span class="nc" id="L289">					break;</span>
+				}
+<span class="nc" id="L291">				Thread.sleep(100);</span>
+<span class="nc" id="L292">			} catch (Exception e) {</span>
+<span class="nc" id="L293">				freemind.main.Resources.getInstance().logException(e);</span>
+			}
+		}
+<span class="nc" id="L296">		return tileImage;</span>
+	}
+
+	public void deRegister() {
+<span class="nc" id="L300">		OptionPanel.removeContributor(mOptionContributor);</span>
+<span class="nc" id="L301">		controller.getActionFactory().deregisterActor(getDoActionClass());</span>
+<span class="nc" id="L302">	}</span>
+
+	public void register() {
+<span class="nc" id="L305">		OptionPanel.addContributor(mOptionContributor);</span>
+<span class="nc" id="L306">		controller.getActionFactory().registerActor(this, getDoActionClass());</span>
+<span class="nc" id="L307">	}</span>
+
+	public void registerMapNode(MapNodePositionHolder pMapNodePositionHolder) {
+<span class="nc" id="L310">		mMapNodePositionHolders.add(pMapNodePositionHolder);</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">		for (Iterator it = mMapNodePositionListeners.iterator(); it.hasNext();) {</span>
+<span class="nc" id="L312">			MapNodePositionListener listener = (MapNodePositionListener) it</span>
+<span class="nc" id="L313">					.next();</span>
+			try {
+<span class="nc" id="L315">				listener.registerMapNode(pMapNodePositionHolder);</span>
+<span class="nc" id="L316">			} catch (Exception e) {</span>
+<span class="nc" id="L317">				freemind.main.Resources.getInstance().logException(e);</span>
+			}
+		}
+<span class="nc" id="L320">	}</span>
+
+	public Set getMapNodePositionHolders() {
+<span class="nc" id="L323">		return Collections.unmodifiableSet(mMapNodePositionHolders);</span>
+	}
+
+	public void deregisterMapNode(MapNodePositionHolder pMapNodePositionHolder) {
+<span class="nc" id="L327">		mMapNodePositionHolders.remove(pMapNodePositionHolder);</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">		for (Iterator it = mMapNodePositionListeners.iterator(); it.hasNext();) {</span>
+<span class="nc" id="L329">			MapNodePositionListener listener = (MapNodePositionListener) it</span>
+<span class="nc" id="L330">					.next();</span>
+			try {
+<span class="nc" id="L332">				listener.deregisterMapNode(pMapNodePositionHolder);</span>
+<span class="nc" id="L333">			} catch (Exception e) {</span>
+<span class="nc" id="L334">				freemind.main.Resources.getInstance().logException(e);</span>
+			}
+		}
+<span class="nc" id="L337">	}</span>
+
+	public void registerMapNodePositionListener(
+			MapNodePositionListener pMapNodePositionListener) {
+<span class="nc" id="L341">		mMapNodePositionListeners.add(pMapNodePositionListener);</span>
+<span class="nc" id="L342">	}</span>
+
+	public void deregisterMapNodePositionListener(
+			MapNodePositionListener pMapNodePositionListener) {
+<span class="nc" id="L346">		mMapNodePositionListeners.remove(pMapNodePositionListener);</span>
+<span class="nc" id="L347">	}</span>
+
+	public OsmTileLoader createTileLoader(TileLoaderListener mMap) {
+<span class="nc" id="L350">		OsmTileLoader loader = null;</span>
+<span class="nc" id="L351">		String tileCacheClass = Resources.getInstance().getProperty(</span>
+<span class="nc" id="L352">				MapDialog.TILE_CACHE_CLASS);</span>
+<span class="nc bnc" id="L353" title="All 2 branches missed.">		if (Tools.safeEquals(tileCacheClass, &quot;file&quot;)) {</span>
+<span class="nc" id="L354">			File cacheDir = getCacheDirectory();</span>
+			try {
+<span class="nc" id="L356">				OsmFileCacheTileLoader osmFileCacheTileLoader = new OsmFileCacheTileLoader(</span>
+<span class="nc" id="L357">						mMap, cacheDir);</span>
+<span class="nc" id="L358">				loader = osmFileCacheTileLoader;</span>
+<span class="nc" id="L359">				long maxFileAge = getCacheMaxAge();</span>
+<span class="nc" id="L360">				logger.info(&quot;Setting cache max age to &quot; + maxFileAge</span>
+<span class="nc" id="L361">						/ OsmFileCacheTileLoader.FILE_AGE_ONE_DAY + &quot; days.&quot;);</span>
+<span class="nc" id="L362">				osmFileCacheTileLoader.setCacheMaxFileAge(maxFileAge);</span>
+<span class="nc" id="L363">			} catch (Exception e1) {</span>
+<span class="nc" id="L364">				freemind.main.Resources.getInstance().logException(e1);</span>
+			}
+		}
+<span class="nc bnc" id="L367" title="All 2 branches missed.">		if (loader == null) {</span>
+<span class="nc" id="L368">			logger.info(&quot;Using osm tile loader&quot;);</span>
+<span class="nc" id="L369">			loader = new OsmTileLoader(mMap);</span>
+		}
+<span class="nc" id="L371">		VersionInformation freemindVersion = controller.getFrame()</span>
+<span class="nc" id="L372">				.getFreemindVersion();</span>
+<span class="nc" id="L373">		loader.headers.put(&quot;User-agent&quot;, &quot;FreeMind &quot; + freemindVersion);</span>
+<span class="nc" id="L374">		return loader;</span>
+	}
+
+	protected long getCacheMaxAge() {
+<span class="nc" id="L378">		long maxFileAge = Resources.getInstance().getLongProperty(</span>
+<span class="nc" id="L379">				MapDialog.TILE_CACHE_MAX_AGE,</span>
+<span class="nc" id="L380">				OsmFileCacheTileLoader.FILE_AGE_ONE_WEEK);</span>
+<span class="nc" id="L381">		return maxFileAge;</span>
+	}
+
+	protected File getCacheDirectory() {
+<span class="nc" id="L385">		String directory = Resources.getInstance().getProperty(</span>
+<span class="nc" id="L386">				MapDialog.FILE_TILE_CACHE_DIRECTORY);</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">		if (directory.startsWith(&quot;%/&quot;)) {</span>
+<span class="nc" id="L388">			directory = Resources.getInstance().getFreemindDirectory()</span>
+<span class="nc" id="L389">					+ File.separator + directory.substring(2);</span>
+		}
+<span class="nc" id="L391">		File cacheDir = new File(directory);</span>
+<span class="nc" id="L392">		logger.info(&quot;Trying to use file cache tile loader with dir &quot;</span>
+<span class="nc" id="L393">				+ directory);</span>
+<span class="nc" id="L394">		return cacheDir;</span>
+	}
+
+	/**
+	 * Set map position. Is undoable.
+	 * 
+	 * @param pTileSource
+	 * 
+	 */
+	public void changePosition(MapNodePositionHolder pHolder,
+			Coordinate pPosition, Coordinate pMapCenter, int pZoom,
+			String pTileSource) {
+<span class="nc" id="L406">		MindMapNode node = pHolder.getNode();</span>
+<span class="nc" id="L407">		PlaceNodeXmlAction doAction = createPlaceNodeXmlActionAction(node,</span>
+<span class="nc" id="L408">				pPosition, pMapCenter, pZoom, pTileSource);</span>
+<span class="nc" id="L409">		PlaceNodeXmlAction undoAction = createPlaceNodeXmlActionAction(node,</span>
+<span class="nc" id="L410">				pHolder.getPosition(), pHolder.getMapCenter(),</span>
+<span class="nc" id="L411">				pHolder.getZoom(), pHolder.getTileSource());</span>
+<span class="nc" id="L412">		ActionFactory actionFactory = controller.getActionFactory();</span>
+<span class="nc" id="L413">		actionFactory.doTransaction(PLUGINS_MAP_NODE_POSITION, new ActionPair(</span>
+<span class="nc" id="L414">				doAction, undoAction));</span>
+<span class="nc" id="L415">	}</span>
+
+	/**
+	 * @param pNode
+	 * @param pPosition
+	 * @param pMapCenter
+	 * @param pZoom
+	 * @param pTileSource
+	 * @return
+	 */
+	private PlaceNodeXmlAction createPlaceNodeXmlActionAction(
+			MindMapNode pNode, Coordinate pPosition, Coordinate pMapCenter,
+			int pZoom, String pTileSource) {
+<span class="nc" id="L428">		logger.info(&quot;Setting position of node &quot; + pNode);</span>
+<span class="nc" id="L429">		PlaceNodeXmlAction action = new PlaceNodeXmlAction();</span>
+<span class="nc" id="L430">		action.setNode(controller.getNodeID(pNode));</span>
+<span class="nc" id="L431">		action.setCursorLatitude(pPosition.getLat());</span>
+<span class="nc" id="L432">		action.setCursorLongitude(pPosition.getLon());</span>
+<span class="nc" id="L433">		action.setMapCenterLatitude(pMapCenter.getLat());</span>
+<span class="nc" id="L434">		action.setMapCenterLongitude(pMapCenter.getLon());</span>
+<span class="nc" id="L435">		action.setZoom(pZoom);</span>
+<span class="nc" id="L436">		action.setTileSource(pTileSource);</span>
+<span class="nc" id="L437">		return action;</span>
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * freemind.modes.mindmapmode.actions.xml.ActorXml#act(freemind.controller
+	 * .actions.generated.instance.XmlAction)
+	 */
+	public void act(XmlAction pAction) {
+<span class="nc bnc" id="L448" title="All 2 branches missed.">		if (pAction instanceof PlaceNodeXmlAction) {</span>
+<span class="nc" id="L449">			PlaceNodeXmlAction placeAction = (PlaceNodeXmlAction) pAction;</span>
+<span class="nc" id="L450">			MindMapNode node = controller.getNodeFromID(placeAction.getNode());</span>
+<span class="nc" id="L451">			MapNodePositionHolder hook = MapNodePositionHolder.getHook(node);</span>
+<span class="nc bnc" id="L452" title="All 2 branches missed.">			if (hook != null) {</span>
+<span class="nc" id="L453">				hook.setMapCenter(new Coordinate(placeAction</span>
+<span class="nc" id="L454">						.getMapCenterLatitude(), placeAction</span>
+<span class="nc" id="L455">						.getMapCenterLongitude()));</span>
+<span class="nc" id="L456">				hook.setPosition(new Coordinate(</span>
+<span class="nc" id="L457">						placeAction.getCursorLatitude(), placeAction</span>
+<span class="nc" id="L458">								.getCursorLongitude()));</span>
+<span class="nc" id="L459">				hook.setZoom(placeAction.getZoom());</span>
+<span class="nc" id="L460">				hook.setTileSource(placeAction.getTileSource());</span>
+<span class="nc" id="L461">				hook.recreateTooltip();</span>
+				// TODO: Only, if values really changed.
+<span class="nc" id="L463">				controller.nodeChanged(node);</span>
+<span class="nc" id="L464">			} else {</span>
+<span class="nc" id="L465">				throw new IllegalArgumentException(</span>
+<span class="nc" id="L466">						&quot;MapNodePositionHolder to node id &quot;</span>
+<span class="nc" id="L467">								+ placeAction.getNode() + &quot; not found.&quot;);</span>
+			}
+
+		}
+<span class="nc" id="L471">	}</span>
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see freemind.modes.mindmapmode.actions.xml.ActorXml#getDoActionClass()
+	 */
+	public Class getDoActionClass() {
+<span class="nc" id="L479">		return PlaceNodeXmlAction.class;</span>
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.openstreetmap.gui.jmapviewer.interfaces.TileLoaderListener#
+	 * getTileCache()
+	 */
+	public TileCache getTileCache() {
+<span class="nc" id="L489">		return mTileCache;</span>
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.openstreetmap.gui.jmapviewer.interfaces.TileLoaderListener#
+	 * tileLoadingFinished(org.openstreetmap.gui.jmapviewer.Tile, boolean)
+	 */
+	public void tileLoadingFinished(Tile pTile, boolean pSuccess) {
+		// TODO Auto-generated method stub
+
+<span class="nc" id="L501">	}</span>
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * freemind.controller.MenuItemEnabledListener#isEnabled(javax.swing.JMenuItem
+	 * , javax.swing.Action)
+	 */
+	public boolean isEnabled(JMenuItem pItem, Action pAction) {
+<span class="nc" id="L511">		String hookName = ((NodeHookAction) pAction).getHookName();</span>
+<span class="nc" id="L512">		logger.fine(&quot;Enabled for &quot; + hookName);</span>
+<span class="nc" id="L513">		if (SearchInMapForNodeTextAction.NODE_CONTEXT_PLUGIN_NAME</span>
+<span class="nc bnc" id="L514" title="All 2 branches missed.">				.equals(hookName)) {</span>
+<span class="nc" id="L515">			return true;</span>
+		}
+<span class="nc bnc" id="L517" title="All 2 branches missed.">		if (ShowMapToNodeAction.NODE_CONTEXT_PLUGIN_NAME.equals(hookName)</span>
+<span class="nc bnc" id="L518" title="All 2 branches missed.">				|| AddLinkToMapAction.NODE_CONTEXT_PLUGIN_NAME.equals(hookName)</span>
+<span class="nc" id="L519">				|| RemoveMapToNodeAction.NODE_CONTEXT_PLUGIN_NAME</span>
+<span class="nc bnc" id="L520" title="All 2 branches missed.">						.equals(hookName)</span>
+<span class="nc" id="L521">				|| AddMapImageToNodeAction.NODE_CONTEXT_PLUGIN_NAME</span>
+<span class="nc bnc" id="L522" title="All 2 branches missed.">						.equals(hookName)) {</span>
+<span class="nc" id="L523">			for (Iterator it = controller.getSelecteds().iterator(); it</span>
+<span class="nc bnc" id="L524" title="All 2 branches missed.">					.hasNext();) {</span>
+<span class="nc" id="L525">				MindMapNode node = (MindMapNode) it.next();</span>
+<span class="nc" id="L526">				MapNodePositionHolder hook = MapNodePositionHolder</span>
+<span class="nc" id="L527">						.getHook(node);</span>
+<span class="nc bnc" id="L528" title="All 2 branches missed.">				if (hook != null) {</span>
+<span class="nc" id="L529">					return true;</span>
+				}
+			}
+		}
+<span class="nc" id="L533">		return false;</span>
+	}
+
+	public MapDialog getMapDialog() {
+<span class="nc" id="L537">		return mMapDialog;</span>
+	}
+
+	public void setMapDialog(MapDialog pMapDialog) {
+<span class="nc" id="L541">		mMapDialog = pMapDialog;</span>
+<span class="nc" id="L542">	}</span>
+
+	public interface NodeVisibilityListener {
+		void nodeVisibilityChanged(
+				MapNodePositionHolder pMapNodePositionHolder, boolean pVisible);
+
+	}
+
+<span class="nc" id="L550">	private HashSet mNodeVisibilityListeners = new HashSet();</span>
+
+	public void registerNodeVisibilityListener(
+			NodeVisibilityListener pNodeVisibilityListener) {
+<span class="nc" id="L554">		mNodeVisibilityListeners.add(pNodeVisibilityListener);</span>
+<span class="nc" id="L555">	}</span>
+
+	public void deregisterNodeVisibilityListener(
+			NodeVisibilityListener pNodeVisibilityListener) {
+<span class="nc" id="L559">		mNodeVisibilityListeners.remove(pNodeVisibilityListener);</span>
+<span class="nc" id="L560">	}</span>
+
+	/**
+	 * @param pVisible
+	 *            is true, when a node is visible now.
+	 * @param pMapNodePositionHolder
+	 */
+	public void fireNodeVisibilityChanged(boolean pVisible,
+			MapNodePositionHolder pMapNodePositionHolder) {
+<span class="nc bnc" id="L569" title="All 2 branches missed.">		for (Iterator it = mNodeVisibilityListeners.iterator(); it.hasNext();) {</span>
+<span class="nc" id="L570">			NodeVisibilityListener listener = (NodeVisibilityListener) it</span>
+<span class="nc" id="L571">					.next();</span>
+			try {
+<span class="nc" id="L573">				listener.nodeVisibilityChanged(pMapNodePositionHolder, pVisible);</span>
+<span class="nc" id="L574">			} catch (Exception e) {</span>
+<span class="nc" id="L575">				freemind.main.Resources.getInstance().logException(e);</span>
+			}
+		}
+<span class="nc" id="L578">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span>FreeMind_integration (Aug 16, 2014 2:28:58 PM)</div></body></html>

@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../.resources/report.gif" type="image/gif"/><title>ScriptingEngine.java</title><link rel="stylesheet" href="../../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../.sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FreeMind_integration (Aug 16, 2014 2:28:58 PM)</a> &gt; <a href="../../index.html" class="el_group">FreeMind_integration</a> &gt; <a href="../index.html" class="el_bundle">FreeMind_integration</a> &gt; <a href="index.source.html" class="el_package">plugins.script</a> &gt; <span class="el_source">ScriptingEngine.java</span></div><h1>ScriptingEngine.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">/*FreeMind - A Program for creating and viewing Mindmaps</span>
+ *Copyright (C) 2000-2006  Joerg Mueller, Daniel Polansky, Christian Foltin and others.
+ *
+ *See COPYING for Details
+ *
+ *This program is free software; you can redistribute it and/or
+ *modify it under the terms of the GNU General Public License
+ *as published by the Free Software Foundation; either version 2
+ *of the License, or (at your option) any later version.
+ *
+ *This program is distributed in the hope that it will be useful,
+ *but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *GNU General Public License for more details.
+ *
+ *You should have received a copy of the GNU General Public License
+ *along with this program; if not, write to the Free Software
+ *Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ *
+ * Created on 02.09.2006
+ */
+
+package plugins.script;
+
+import java.io.File;
+import java.io.InputStream;
+import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.regex.Matcher;
+
+import javax.swing.JOptionPane;
+
+import org.codehaus.groovy.ast.ASTNode;
+import org.codehaus.groovy.ast.ModuleNode;
+import org.codehaus.groovy.control.CompilationFailedException;
+import org.codehaus.groovy.runtime.InvokerHelper;
+
+import freemind.common.OptionalDontShowMeAgainDialog;
+import freemind.main.FreeMind;
+import freemind.main.FreeMindMain;
+import freemind.main.FreeMindSecurityManager;
+import freemind.main.Tools;
+import freemind.main.Tools.BooleanHolder;
+import freemind.modes.MindMapNode;
+import freemind.modes.attributes.NodeAttributeTableModel;
+import freemind.modes.mindmapmode.MindMapController;
+import freemind.modes.mindmapmode.hooks.MindMapHookAdapter;
+import groovy.lang.Binding;
+import groovy.lang.GroovyRuntimeException;
+import groovy.lang.GroovyShell;
+import groovy.lang.Script;
+
+/**
+ * @author foltin
+ * 
+ */
+<span class="nc" id="L58">public class ScriptingEngine extends MindMapHookAdapter {</span>
+	public static final String SCRIPT_PREFIX = &quot;script&quot;;
+<span class="fc" id="L60">	private static final HashMap sScriptCookies = new HashMap();</span>
+<span class="fc" id="L61">	static java.util.logging.Logger logger;</span>
+
+	public interface ErrorHandler {
+		void gotoLine(int pLineNumber);
+	}
+
+	public void startupMapHook() {
+<span class="nc" id="L68">		super.startupMapHook();</span>
+<span class="nc" id="L69">		MindMapNode node = getMindMapController().getMap().getRootNode();</span>
+<span class="nc" id="L70">		BooleanHolder booleanHolder = new BooleanHolder(false);</span>
+		// check for installed script:
+<span class="nc" id="L72">		String scriptLocation = getResourceString(&quot;ScriptLocation&quot;);</span>
+<span class="nc bnc" id="L73" title="All 4 branches missed.">		if (scriptLocation != null &amp;&amp; scriptLocation.length() != 0) {</span>
+<span class="nc" id="L74">			performExternalScript(scriptLocation, node, booleanHolder);</span>
+<span class="nc" id="L75">			return;</span>
+		}
+		// start calculation:
+<span class="nc" id="L78">		getController().getFrame().setWaitingCursor(true);</span>
+		try {
+<span class="nc" id="L80">			performScriptOperation(node, booleanHolder);</span>
+<span class="nc" id="L81">		} finally {</span>
+<span class="nc" id="L82">			getController().getFrame().setWaitingCursor(false);</span>
+<span class="nc" id="L83">		}</span>
+<span class="nc" id="L84">	}</span>
+
+	private void performExternalScript(String pScriptLocation,
+			MindMapNode pNode, BooleanHolder pBooleanHolder) {
+		// get cookies from base plugin:
+<span class="nc" id="L89">		ScriptingRegistration reg = (ScriptingRegistration) getPluginBaseClass();</span>
+<span class="nc" id="L90">		String scriptContent = Tools.getFile(new File(pScriptLocation));</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">		if (scriptContent == null) {</span>
+<span class="nc" id="L92">			return;</span>
+		}
+<span class="nc" id="L94">		executeScript(pNode, pBooleanHolder, scriptContent,</span>
+<span class="nc" id="L95">				getMindMapController(), new ErrorHandler() {</span>
+					public void gotoLine(int pLineNumber) {
+<span class="nc" id="L97">					}</span>
+<span class="nc" id="L98">				}, System.out, reg.getScriptCookies());</span>
+<span class="nc" id="L99">	}</span>
+
+	private void performScriptOperation(MindMapNode node,
+			BooleanHolder pAlreadyAScriptExecuted) {
+		// depth first:
+<span class="nc bnc" id="L104" title="All 2 branches missed.">		for (Iterator iter = node.childrenUnfolded(); iter.hasNext();) {</span>
+<span class="nc" id="L105">			MindMapNode element = (MindMapNode) iter.next();</span>
+<span class="nc" id="L106">			performScriptOperation(element, pAlreadyAScriptExecuted);</span>
+		}
+<span class="nc" id="L108">		NodeAttributeTableModel attributes = node.getAttributes();</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">		if (attributes == null)</span>
+<span class="nc" id="L110">			return;</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">		for (int row = 0; row &lt; attributes.getRowCount(); ++row) {</span>
+<span class="nc" id="L112">			String attrKey = (String) attributes.getName(row);</span>
+<span class="nc" id="L113">			String script = (String) attributes.getValue(row);</span>
+<span class="nc" id="L114">			logger.info(&quot;Found key = &quot; + attrKey);</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">			if (attrKey.startsWith(SCRIPT_PREFIX)) {</span>
+				// get cookies from base plugin:
+<span class="nc" id="L117">				ScriptingRegistration reg = (ScriptingRegistration) getPluginBaseClass();</span>
+
+<span class="nc" id="L119">				boolean result = executeScript(node, pAlreadyAScriptExecuted,</span>
+<span class="nc" id="L120">						script, getMindMapController(), new ErrorHandler() {</span>
+							public void gotoLine(int pLineNumber) {
+<span class="nc" id="L122">							}</span>
+<span class="nc" id="L123">						}, System.out, reg.getScriptCookies());</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">				if (!result) {</span>
+<span class="nc" id="L125">					break;</span>
+				}
+			}
+		}
+<span class="nc" id="L129">	}</span>
+
+	public static int findLineNumberInString(String resultString, int lineNumber) {
+<span class="fc" id="L132">		java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(</span>
+<span class="fc" id="L133">				&quot;.*@ line ([0-9]+).*&quot;, java.util.regex.Pattern.DOTALL);</span>
+<span class="fc" id="L134">		Matcher matcher = pattern.matcher(resultString);</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">		if (matcher.matches()) {</span>
+<span class="fc" id="L136">			lineNumber = Integer.parseInt(matcher.group(1));</span>
+		}
+<span class="fc" id="L138">		return lineNumber;</span>
+	}
+
+	/**
+	 * @param node
+	 * @param pAlreadyAScriptExecuted
+	 * @param script
+	 * @param pMindMapController
+	 * @param pScriptCookies
+	 *            TODO
+	 * @return true, if further scripts can be executed, false, if the user
+	 *         canceled or an error occurred.
+	 */
+	static boolean executeScript(MindMapNode node,
+			BooleanHolder pAlreadyAScriptExecuted, String script,
+			MindMapController pMindMapController, ErrorHandler pErrorHandler,
+			PrintStream pOutStream, HashMap pScriptCookies) {
+		// ask user if first script:
+<span class="nc" id="L156">		FreeMindMain frame = pMindMapController.getFrame();</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">		if (!pAlreadyAScriptExecuted.getValue()) {</span>
+<span class="nc" id="L158">			int showResult = new OptionalDontShowMeAgainDialog(</span>
+<span class="nc" id="L159">					frame.getJFrame(), pMindMapController.getSelectedView(),</span>
+<span class="nc" id="L160">					&quot;really_execute_script&quot;, &quot;confirmation&quot;,</span>
+<span class="nc" id="L161">					pMindMapController,</span>
+<span class="nc" id="L162">					new OptionalDontShowMeAgainDialog.StandardPropertyHandler(</span>
+<span class="nc" id="L163">							pMindMapController.getController(),</span>
+<span class="nc" id="L164">							FreeMind.RESOURCES_EXECUTE_SCRIPTS_WITHOUT_ASKING),</span>
+<span class="nc" id="L165">					OptionalDontShowMeAgainDialog.ONLY_OK_SELECTION_IS_STORED)</span>
+<span class="nc" id="L166">					.show().getResult();</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">			if (showResult != JOptionPane.OK_OPTION) {</span>
+<span class="nc" id="L168">				return false;</span>
+			}
+		}
+<span class="nc" id="L171">		pAlreadyAScriptExecuted.setValue(true);</span>
+<span class="nc" id="L172">		Binding binding = new Binding();</span>
+<span class="nc" id="L173">		binding.setVariable(&quot;c&quot;, pMindMapController);</span>
+<span class="nc" id="L174">		binding.setVariable(&quot;node&quot;, node);</span>
+<span class="nc" id="L175">		binding.setVariable(&quot;cookies&quot;, sScriptCookies);</span>
+
+<span class="nc" id="L177">		boolean assignResult = false;</span>
+<span class="nc" id="L178">		String assignTo = null;</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">		if (script.startsWith(&quot;=&quot;)) {</span>
+<span class="nc" id="L180">			script = script.substring(1);</span>
+<span class="nc" id="L181">			assignResult = true;</span>
+<span class="nc" id="L182">		} else {</span>
+<span class="nc" id="L183">			int indexOfEquals = script.indexOf('=');</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">			if (indexOfEquals &gt; 0) {</span>
+<span class="nc" id="L185">				String start = script.substring(0, indexOfEquals);</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">				if (start.matches(&quot;[a-zA-Z0-9_]+&quot;)) {</span>
+<span class="nc" id="L187">					assignTo = start;</span>
+<span class="nc" id="L188">					script = script.substring(indexOfEquals + 1);</span>
+<span class="nc" id="L189">					assignResult = true;</span>
+				}
+			}
+		}
+		/*
+		 * get preferences (and store them again after the script execution,
+		 * such that the scripts are not able to change them).
+		 */
+<span class="nc" id="L197">		String executeWithoutAsking = frame</span>
+<span class="nc" id="L198">				.getProperty(FreeMind.RESOURCES_EXECUTE_SCRIPTS_WITHOUT_ASKING);</span>
+<span class="nc" id="L199">		String executeWithoutFileRestriction = frame</span>
+<span class="nc" id="L200">				.getProperty(FreeMind.RESOURCES_EXECUTE_SCRIPTS_WITHOUT_FILE_RESTRICTION);</span>
+<span class="nc" id="L201">		String executeWithoutNetworkRestriction = frame</span>
+<span class="nc" id="L202">				.getProperty(FreeMind.RESOURCES_EXECUTE_SCRIPTS_WITHOUT_NETWORK_RESTRICTION);</span>
+<span class="nc" id="L203">		String executeWithoutExecRestriction = frame</span>
+<span class="nc" id="L204">				.getProperty(FreeMind.RESOURCES_EXECUTE_SCRIPTS_WITHOUT_EXEC_RESTRICTION);</span>
+<span class="nc" id="L205">		String signedScriptsWithoutRestriction = frame</span>
+<span class="nc" id="L206">				.getProperty(FreeMind.RESOURCES_SIGNED_SCRIPT_ARE_TRUSTED);</span>
+		/* *************** */
+		/* **Signature ** */
+		/* *************** */
+<span class="nc" id="L210">		PrintStream oldOut = System.out;</span>
+<span class="nc" id="L211">		Object value = null;</span>
+<span class="nc" id="L212">		GroovyRuntimeException e1 = null;</span>
+<span class="nc" id="L213">		Throwable e2 = null;</span>
+<span class="nc" id="L214">		boolean filePerm = Tools</span>
+<span class="nc" id="L215">				.isPreferenceTrue(executeWithoutFileRestriction);</span>
+<span class="nc" id="L216">		boolean networkPerm = Tools</span>
+<span class="nc" id="L217">				.isPreferenceTrue(executeWithoutNetworkRestriction);</span>
+<span class="nc" id="L218">		boolean execPerm = Tools</span>
+<span class="nc" id="L219">				.isPreferenceTrue(executeWithoutExecRestriction);</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">		if (Tools.isPreferenceTrue(signedScriptsWithoutRestriction)) {</span>
+<span class="nc" id="L221">			boolean isSigned = new SignedScriptHandler().isScriptSigned(script,</span>
+<span class="nc" id="L222">					pOutStream);</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">			if (isSigned) {</span>
+<span class="nc" id="L224">				filePerm = true;</span>
+<span class="nc" id="L225">				networkPerm = true;</span>
+<span class="nc" id="L226">				execPerm = true;</span>
+			}
+		}
+<span class="nc" id="L229">		final ScriptingSecurityManager scriptingSecurityManager = new ScriptingSecurityManager(</span>
+<span class="nc" id="L230">				filePerm, networkPerm, execPerm);</span>
+<span class="nc" id="L231">		final FreeMindSecurityManager securityManager = (FreeMindSecurityManager) System</span>
+<span class="nc" id="L232">				.getSecurityManager();</span>
+		try {
+<span class="nc" id="L234">			System.setOut(pOutStream);</span>
+			// copied from freeplane from
+			// http://freeplane.bzr.sourceforge.net/bzr/freeplane/freeplane_program/release_branches/1_0_x/annotate/head%3A/freeplane_plugin_script/src/org/freeplane/plugin/script/ScriptingEngine.java
+<span class="nc" id="L237">			final GroovyShell shell = new GroovyShell(binding) {</span>
+				/**
+				 * Evaluates some script against the current Binding and returns
+				 * the result
+				 * 
+				 * @param in
+				 *            the stream reading the script
+				 * @param fileName
+				 *            is the logical file name of the script (which is
+				 *            used to create the class name of the script)
+				 */
+				public Object evaluate(final InputStream in,
+						final String fileName)
+						throws CompilationFailedException {
+<span class="nc" id="L251">					Script script = null;</span>
+					try {
+<span class="nc" id="L253">						script = parse(in, fileName);</span>
+<span class="nc" id="L254">						securityManager</span>
+<span class="nc" id="L255">								.setFinalSecurityManager(scriptingSecurityManager);</span>
+<span class="nc" id="L256">						return script.run();</span>
+<span class="nc" id="L257">					} finally {</span>
+<span class="nc bnc" id="L258" title="All 4 branches missed.">						if (script != null) {</span>
+<span class="nc" id="L259">							InvokerHelper.removeClass(script.getClass());</span>
+							// setting the same security manager the second time
+							// causes it to be
+							// removed.
+<span class="nc" id="L263">							securityManager</span>
+<span class="nc" id="L264">									.setFinalSecurityManager(scriptingSecurityManager);</span>
+						}
+<span class="nc" id="L266">					}</span>
+				}
+			};
+<span class="nc" id="L269">			value = shell.evaluate(script);</span>
+<span class="nc" id="L270">		} catch (final GroovyRuntimeException e) {</span>
+<span class="nc" id="L271">			e1 = e;</span>
+<span class="nc" id="L272">		} catch (final Throwable e) {</span>
+<span class="nc" id="L273">			e2 = e;</span>
+<span class="nc" id="L274">		} finally {</span>
+<span class="nc" id="L275">			System.setOut(oldOut);</span>
+			/* restore preferences (and assure that the values are unchanged!). */
+<span class="nc" id="L277">			frame.setProperty(</span>
+<span class="nc" id="L278">					FreeMind.RESOURCES_EXECUTE_SCRIPTS_WITHOUT_ASKING,</span>
+<span class="nc" id="L279">					executeWithoutAsking);</span>
+<span class="nc" id="L280">			frame.setProperty(</span>
+<span class="nc" id="L281">					FreeMind.RESOURCES_EXECUTE_SCRIPTS_WITHOUT_FILE_RESTRICTION,</span>
+<span class="nc" id="L282">					executeWithoutFileRestriction);</span>
+<span class="nc" id="L283">			frame.setProperty(</span>
+<span class="nc" id="L284">					FreeMind.RESOURCES_EXECUTE_SCRIPTS_WITHOUT_NETWORK_RESTRICTION,</span>
+<span class="nc" id="L285">					executeWithoutNetworkRestriction);</span>
+<span class="nc" id="L286">			frame.setProperty(</span>
+<span class="nc" id="L287">					FreeMind.RESOURCES_EXECUTE_SCRIPTS_WITHOUT_EXEC_RESTRICTION,</span>
+<span class="nc" id="L288">					executeWithoutExecRestriction);</span>
+<span class="nc" id="L289">			frame.setProperty(FreeMind.RESOURCES_SIGNED_SCRIPT_ARE_TRUSTED,</span>
+<span class="nc" id="L290">					signedScriptsWithoutRestriction);</span>
+<span class="nc" id="L291">		}</span>
+		/*
+		 * Cover exceptions in normal security context (ie. no problem with
+		 * (log) file writing etc.)
+		 */
+<span class="nc bnc" id="L296" title="All 2 branches missed.">		if (e1 != null) {</span>
+<span class="nc" id="L297">			String resultString = e1.getMessage();</span>
+<span class="nc" id="L298">			pOutStream.print(&quot;message: &quot; + resultString);</span>
+<span class="nc" id="L299">			ModuleNode module = e1.getModule();</span>
+<span class="nc" id="L300">			ASTNode astNode = e1.getNode();</span>
+<span class="nc" id="L301">			int lineNumber = -1;</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">			if (module != null) {</span>
+<span class="nc" id="L303">				lineNumber = module.getLineNumber();</span>
+<span class="nc bnc" id="L304" title="All 2 branches missed.">			} else if (astNode != null) {</span>
+<span class="nc" id="L305">				lineNumber = astNode.getLineNumber();</span>
+<span class="nc" id="L306">			} else {</span>
+<span class="nc" id="L307">				lineNumber = findLineNumberInString(resultString, lineNumber);</span>
+			}
+<span class="nc" id="L309">			pOutStream.print(&quot;Line number: &quot; + lineNumber);</span>
+<span class="nc" id="L310">			pErrorHandler.gotoLine(lineNumber);</span>
+<span class="nc" id="L311">			return false;</span>
+
+		}
+<span class="nc bnc" id="L314" title="All 2 branches missed.">		if (e2 != null) {</span>
+<span class="nc" id="L315">			freemind.main.Resources.getInstance().logException(e2);</span>
+<span class="nc" id="L316">			pOutStream.print(e2.getMessage());</span>
+<span class="nc bnc" id="L317" title="All 2 branches missed.">			String cause = ((e2.getCause() != null) ? e2.getCause()</span>
+<span class="nc" id="L318">					.getMessage() : &quot;&quot;);</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">			String message = ((e2.getMessage() != null) ? e2.getMessage() : &quot;&quot;);</span>
+<span class="nc" id="L320">			pMindMapController</span>
+<span class="nc" id="L321">					.getController()</span>
+<span class="nc" id="L322">					.errorMessage(</span>
+<span class="nc" id="L323">							e2.getClass().getName()</span>
+<span class="nc" id="L324">									+ &quot;: &quot;</span>
+<span class="nc" id="L325">									+ cause</span>
+<span class="nc bnc" id="L326" title="All 4 branches missed.">									+ ((cause.length() != 0 &amp;&amp; message.length() != 0) ? &quot;, &quot;</span>
+<span class="nc" id="L327">											: &quot;&quot;) + message);</span>
+<span class="nc" id="L328">			return false;</span>
+		}
+<span class="nc" id="L330">		pOutStream.print(frame</span>
+<span class="nc" id="L331">				.getResourceString(&quot;plugins/ScriptEditor/window.Result&quot;)</span>
+<span class="nc" id="L332">				+ value);</span>
+<span class="nc bnc" id="L333" title="All 4 branches missed.">		if (assignResult &amp;&amp; value != null) {</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">			if (assignTo == null) {</span>
+<span class="nc" id="L335">				pMindMapController.setNodeText(node, value.toString());</span>
+<span class="nc" id="L336">			} else {</span>
+<span class="nc" id="L337">				pMindMapController.editAttribute(node, assignTo,</span>
+<span class="nc" id="L338">						value.toString());</span>
+			}
+		}
+<span class="nc" id="L341">		return true;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span>FreeMind_integration (Aug 16, 2014 2:28:58 PM)</div></body></html>

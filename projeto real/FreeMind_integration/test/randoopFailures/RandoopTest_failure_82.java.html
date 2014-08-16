@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../.resources/report.gif" type="image/gif"/><title>RandoopTest_failure_82.java</title><link rel="stylesheet" href="../../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../.sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FreeMind_integration (Aug 16, 2014 3:57:47 PM)</a> &gt; <a href="../../index.html" class="el_group">FreeMind_integration</a> &gt; <a href="../index.html" class="el_bundle">test</a> &gt; <a href="index.source.html" class="el_package">randoopFailures</a> &gt; <span class="el_source">RandoopTest_failure_82.java</span></div><h1>RandoopTest_failure_82.java</h1><pre class="source lang-java linenums">package randoopFailures;
+
+import junit.framework.*;
+
+<span class="fc" id="L5">public class RandoopTest_failure_82 extends TestCase {</span>
+
+<span class="fc" id="L7">  public static boolean debug = false;</span>
+
+  public void test1() throws Throwable {
+
+<span class="pc bpc" id="L11" title="1 of 2 branches missed.">    if (debug) System.out.printf(&quot;%nRandoopTest_failure_82.test1&quot;);</span>
+
+
+<span class="nc" id="L14">    plugins.map.MapNodePositionHolder var0 = new plugins.map.MapNodePositionHolder();</span>
+<span class="nc" id="L15">    freemind.main.XMLElement var1 = new freemind.main.XMLElement();</span>
+<span class="nc" id="L16">    freemind.controller.filter.condition.AttributeNotExistsCondition var4 = new freemind.controller.filter.condition.AttributeNotExistsCondition(&quot;ToolBarUI&quot;);</span>
+<span class="nc" id="L17">    var1.setAttribute(&quot;ButtonUI&quot;, (java.lang.Object)&quot;ToolBarUI&quot;);</span>
+<span class="nc" id="L18">    var1.removeChild(&quot;IntHolder(0)&quot;);</span>
+<span class="nc" id="L19">    var0.loadFrom(var1);</span>
+<span class="nc" id="L20">    plugins.map.MapNodePositionHolder var9 = new plugins.map.MapNodePositionHolder();</span>
+<span class="nc" id="L21">    freemind.main.XMLElement var10 = new freemind.main.XMLElement();</span>
+<span class="nc" id="L22">    java.lang.String var11 = var10.getTagName();</span>
+<span class="nc" id="L23">    java.util.Iterator var12 = var10.enumerateAttributeNames();</span>
+<span class="nc" id="L24">    java.util.Iterator var13 = var10.enumeratePropertyNames();</span>
+<span class="nc" id="L25">    var9.loadFrom(var10);</span>
+<span class="nc" id="L26">    freemind.main.XMLElement var15 = new freemind.main.XMLElement();</span>
+<span class="nc" id="L27">    java.lang.String var16 = var15.getTagName();</span>
+<span class="nc" id="L28">    java.util.Iterator var17 = var15.enumerateAttributeNames();</span>
+<span class="nc" id="L29">    java.util.Iterator var18 = var15.enumeratePropertyNames();</span>
+<span class="nc" id="L30">    var9.loadFrom(var15);</span>
+<span class="nc" id="L31">    org.openstreetmap.gui.jmapviewer.Coordinate var20 = var9.getPosition();</span>
+<span class="nc" id="L32">    plugins.map.FreeMindMapController.PositionHolder var25 = new plugins.map.FreeMindMapController.PositionHolder(10.0d, 1.0d, 100);</span>
+<span class="nc" id="L33">    org.openstreetmap.gui.jmapviewer.Coordinate var26 = var25.getCoordinate();</span>
+<span class="nc" id="L34">    plugins.map.MapNodePositionHolder var27 = new plugins.map.MapNodePositionHolder();</span>
+<span class="nc" id="L35">    freemind.main.XMLElement var28 = new freemind.main.XMLElement();</span>
+<span class="nc" id="L36">    java.lang.String var29 = var28.getTagName();</span>
+<span class="nc" id="L37">    java.util.Iterator var30 = var28.enumerateAttributeNames();</span>
+<span class="nc" id="L38">    java.util.Iterator var31 = var28.enumeratePropertyNames();</span>
+<span class="nc" id="L39">    var27.loadFrom(var28);</span>
+<span class="nc" id="L40">    freemind.main.XMLElement var33 = new freemind.main.XMLElement();</span>
+<span class="nc" id="L41">    java.lang.String var34 = var33.getTagName();</span>
+<span class="nc" id="L42">    java.util.Iterator var35 = var33.enumerateAttributeNames();</span>
+<span class="nc" id="L43">    java.util.Iterator var36 = var33.enumeratePropertyNames();</span>
+<span class="nc" id="L44">    var27.loadFrom(var33);</span>
+<span class="nc" id="L45">    org.openstreetmap.gui.jmapviewer.Coordinate var38 = var27.getPosition();</span>
+<span class="nc" id="L46">    java.lang.String var40 = plugins.map.FreeMindMapController.getLink(&quot;plugins.map.FreeMindMapController$MapQuestOpenMap&quot;, var26, var38, 200);</span>
+<span class="nc" id="L47">    var0.changePosition(var20, var38, 256, &quot;false&quot;);</span>
+
+<span class="nc" id="L49">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span>FreeMind_integration (Aug 16, 2014 3:57:47 PM)</div></body></html>

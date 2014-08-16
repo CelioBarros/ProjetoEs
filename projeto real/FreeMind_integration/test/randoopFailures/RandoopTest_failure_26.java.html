@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../.resources/report.gif" type="image/gif"/><title>RandoopTest_failure_26.java</title><link rel="stylesheet" href="../../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../.sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FreeMind_integration (Aug 16, 2014 3:57:47 PM)</a> &gt; <a href="../../index.html" class="el_group">FreeMind_integration</a> &gt; <a href="../index.html" class="el_bundle">test</a> &gt; <a href="index.source.html" class="el_package">randoopFailures</a> &gt; <span class="el_source">RandoopTest_failure_26.java</span></div><h1>RandoopTest_failure_26.java</h1><pre class="source lang-java linenums">package randoopFailures;
+
+import junit.framework.*;
+
+<span class="fc" id="L5">public class RandoopTest_failure_26 extends TestCase {</span>
+
+<span class="fc" id="L7">  public static boolean debug = false;</span>
+
+  public void test1() throws Throwable {
+
+<span class="pc bpc" id="L11" title="1 of 2 branches missed.">    if (debug) System.out.printf(&quot;%nRandoopTest_failure_26.test1&quot;);</span>
+
+
+<span class="nc" id="L14">    accessories.plugins.time.JTripleCalendar var0 = new accessories.plugins.time.JTripleCalendar();</span>
+<span class="nc" id="L15">    boolean var1 = var0.requestFocusInWindow();</span>
+<span class="nc" id="L16">    accessories.plugins.time.JDayChooser var2 = var0.getDayChooser();</span>
+<span class="nc" id="L17">    boolean var3 = var2.isDecorationBordersVisible();</span>
+<span class="nc" id="L18">    java.util.GregorianCalendar var4 = var2.getTemporaryCalendar();</span>
+<span class="nc" id="L19">    var2.setAlwaysFireDayProperty(true);</span>
+<span class="nc" id="L20">    freemind.view.mindmapview.MapView.ScrollPane var7 = new freemind.view.mindmapview.MapView.ScrollPane();</span>
+<span class="nc" id="L21">    javax.accessibility.AccessibleContext var8 = var7.getAccessibleContext();</span>
+<span class="nc" id="L22">    accessories.plugins.time.JTripleCalendar var9 = new accessories.plugins.time.JTripleCalendar();</span>
+<span class="nc" id="L23">    boolean var10 = var9.requestFocusInWindow();</span>
+<span class="nc" id="L24">    accessories.plugins.time.JDayChooser var11 = var9.getDayChooser();</span>
+<span class="nc" id="L25">    java.awt.Color var12 = var11.getSundayForeground();</span>
+<span class="nc" id="L26">    var7.setColumnHeaderView((java.awt.Component)var11);</span>
+<span class="nc" id="L27">    var11.setAlwaysFireDayProperty(true);</span>
+<span class="nc" id="L28">    freemind.common.FreeMindProgressMonitor var17 = new freemind.common.FreeMindProgressMonitor(&quot;file:/home/joao/workspace/\n&quot;);</span>
+<span class="nc" id="L29">    java.awt.event.InputMethodListener[] var18 = var17.getInputMethodListeners();</span>
+<span class="nc" id="L30">    var17.show();</span>
+<span class="nc" id="L31">    java.lang.String var20 = var17.getTitle();</span>
+<span class="nc" id="L32">    freemind.common.FreeMindProgressMonitor var22 = new freemind.common.FreeMindProgressMonitor(&quot;file:/home/joao/workspace/\n&quot;);</span>
+<span class="nc" id="L33">    var22.revalidate();</span>
+<span class="nc" id="L34">    var22.addNotify();</span>
+<span class="nc" id="L35">    var22.setFocusTraversalPolicyProvider(false);</span>
+<span class="nc" id="L36">    java.awt.Point var27 = var22.location();</span>
+<span class="nc" id="L37">    var17.setLocation(var27);</span>
+<span class="nc" id="L38">    java.awt.Point var29 = var11.getLocation(var27);</span>
+<span class="nc" id="L39">    freemind.common.FreeMindProgressMonitor var31 = new freemind.common.FreeMindProgressMonitor(&quot;file:/home/joao/workspace/\n&quot;);</span>
+<span class="nc" id="L40">    java.awt.event.InputMethodListener[] var32 = var31.getInputMethodListeners();</span>
+<span class="nc" id="L41">    javax.accessibility.AccessibleContext var33 = var31.getAccessibleContext();</span>
+<span class="nc" id="L42">    freemind.common.FreeMindProgressMonitor var35 = new freemind.common.FreeMindProgressMonitor(&quot;file:/home/joao/workspace/\n&quot;);</span>
+<span class="nc" id="L43">    var35.revalidate();</span>
+<span class="nc" id="L44">    var31.setLocationRelativeTo((java.awt.Component)var35);</span>
+<span class="nc" id="L45">    boolean var38 = var31.isValidateRoot();</span>
+<span class="nc" id="L46">    accessories.plugins.time.JCalendar var39 = new accessories.plugins.time.JCalendar();</span>
+<span class="nc" id="L47">    java.awt.Color var40 = var39.getDecorationBackgroundColor();</span>
+<span class="nc" id="L48">    accessories.plugins.time.JCalendar var41 = new accessories.plugins.time.JCalendar();</span>
+<span class="nc" id="L49">    java.util.Calendar var42 = var41.getCalendar();</span>
+<span class="nc" id="L50">    java.util.Date var43 = var41.getMaxSelectableDate();</span>
+<span class="nc" id="L51">    var39.setDate(var43);</span>
+<span class="nc" id="L52">    var39.setWeekOfYearVisible(true);</span>
+<span class="nc" id="L53">    var31.addPropertyChangeListener((java.beans.PropertyChangeListener)var39);</span>
+<span class="nc" id="L54">    accessories.plugins.time.JCalendar var48 = new accessories.plugins.time.JCalendar();</span>
+<span class="nc" id="L55">    java.util.Calendar var49 = var48.getCalendar();</span>
+<span class="nc" id="L56">    java.util.Date var50 = var48.getMaxSelectableDate();</span>
+<span class="nc" id="L57">    var39.setMinSelectableDate(var50);</span>
+<span class="nc" id="L58">    java.awt.Point var52 = freemind.main.Tools.convertPointToAncestor((java.awt.Component)var2, var29, (java.awt.Component)var39);</span>
+
+<span class="nc" id="L60">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span>FreeMind_integration (Aug 16, 2014 3:57:47 PM)</div></body></html>

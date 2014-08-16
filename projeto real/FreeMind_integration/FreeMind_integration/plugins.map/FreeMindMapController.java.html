@@ -1,0 +1,2671 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../.resources/report.gif" type="image/gif"/><title>FreeMindMapController.java</title><link rel="stylesheet" href="../../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../.sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FreeMind_integration (Aug 16, 2014 3:57:47 PM)</a> &gt; <a href="../../index.html" class="el_group">FreeMind_integration</a> &gt; <a href="../index.html" class="el_bundle">FreeMind_integration</a> &gt; <a href="index.source.html" class="el_package">plugins.map</a> &gt; <span class="el_source">FreeMindMapController.java</span></div><h1>FreeMindMapController.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">/*FreeMind - A Program for creating and viewing Mindmaps</span>
+ *Copyright (C) 2000-2011 Joerg Mueller, Daniel Polansky, Christian Foltin, Dimitri Polivaev and others.
+ *
+ *See COPYING for Details
+ *
+ *This program is free software; you can redistribute it and/or
+ *modify it under the terms of the GNU General Public License
+ *as published by the Free Software Foundation; either version 2
+ *of the License, or (at your option) any later version.
+ *
+ *This program is distributed in the hope that it will be useful,
+ *but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *GNU General Public License for more details.
+ *
+ *You should have received a copy of the GNU General Public License
+ *along with this program; if not, write to the Free Software
+ *Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
+
+package plugins.map;
+
+//License: GPL. Copyright 2008 by Jan Peter Stotz
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.EventQueue;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.datatransfer.StringSelection;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLEncoder;
+import java.text.MessageFormat;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Vector;
+
+import javax.imageio.ImageIO;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
+import javax.swing.JTable;
+import javax.swing.KeyStroke;
+import javax.swing.Timer;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
+
+import org.openstreetmap.gui.jmapviewer.Coordinate;
+import org.openstreetmap.gui.jmapviewer.JMapController;
+import org.openstreetmap.gui.jmapviewer.JMapViewer;
+import org.openstreetmap.gui.jmapviewer.OsmMercator;
+import org.openstreetmap.gui.jmapviewer.interfaces.TileSource;
+import org.openstreetmap.gui.jmapviewer.tilesources.AbstractOsmTileSource;
+import org.openstreetmap.gui.jmapviewer.tilesources.OsmTileSource;
+
+import freemind.common.FreeMindTask;
+import freemind.common.XmlBindingTools;
+import freemind.controller.MenuItemEnabledListener;
+import freemind.controller.MenuItemSelectedListener;
+import freemind.controller.StructuredMenuHolder;
+import freemind.controller.actions.generated.instance.Place;
+import freemind.controller.actions.generated.instance.Result;
+import freemind.controller.actions.generated.instance.Reversegeocode;
+import freemind.controller.actions.generated.instance.Searchresults;
+import freemind.extensions.ExportHook;
+import freemind.main.Resources;
+import freemind.main.Tools;
+import freemind.modes.MindMapNode;
+import freemind.modes.ModeController;
+import freemind.modes.common.plugins.MapNodePositionHolderBase;
+import freemind.modes.mindmapmode.MindMapController;
+import freemind.view.mindmapview.EditNodeBase;
+import freemind.view.mindmapview.EditNodeTextField;
+import freemind.view.mindmapview.NodeView;
+
+/**
+ * Default map controller which implements map moving by pressing the right
+ * mouse button and zooming by double click or by mouse wheel.
+ * 
+ * @author Jan Peter Stotz
+ * 
+ *         FreeMind Extensions: - Move with button 1 (consistency with FreeMind
+ *         UI) OK - Single click for Set Cursor OK - Mouse Wheel: Zoom OK -
+ *         Control-Mouse Wheel: ? - (Right click +) Menu: popup menu mit * If
+ *         right click, then the cursor is set to that position (consistency
+ *         with FM-UI) * Place node(s) ==&gt; the node gets a
+ *         {@link MapMarkerLocation} here. The position, the position of the map
+ *         and the zoom is stored in the node. *
+ * 
+ *         Node Extra Menu Items: * Show node(s) in Map ==&gt; Chooses the best
+ *         view for the nodes and selects them.
+ * 
+ * 
+ *         FIXME: On undo place node, the position is gone. (Undo action
+ *         contains the initial zeros, I guess).
+ */
+public class FreeMindMapController extends JMapController implements
+		MouseListener, MouseMotionListener, MouseWheelListener, ActionListener,
+		KeyListener {
+	/**
+	 * @author foltin
+	 * @date 27.07.2012
+	 */
+	public interface CursorPositionListener {
+		void cursorPositionChanged(Coordinate pCursorPosition);
+	}
+
+	/**
+	 * 
+	 */
+	private static final int MODIFIERS_WITHOUT_SHIFT = Integer.MAX_VALUE
+			^ KeyEvent.SHIFT_MASK;
+
+	private static final String NODE_MAP_HOME_PROPERTY = &quot;node_map_home&quot;;
+
+	private static final String MAP_DIALOG_PROGRESS_MESSAGE = &quot;MapDialog.progressMessage&quot;;
+
+	private static final String MAP_DIALOG_ADD_PLACES = &quot;MapDialog.addPlaces&quot;;
+
+	private static final String XML_VERSION_1_0_ENCODING_UTF_8 = &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;\n&quot;;
+
+	private static final int MOUSE_BUTTONS_MASK = MouseEvent.BUTTON3_DOWN_MASK
+			| MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK;
+
+	private static final int MAC_MOUSE_BUTTON3_MASK = MouseEvent.CTRL_DOWN_MASK
+			| MouseEvent.BUTTON1_DOWN_MASK;
+	private static final int MAC_MOUSE_BUTTON1_MASK = MouseEvent.BUTTON1_DOWN_MASK;
+
+	private static final int SCROLL_MARGIN = 5;
+
+	private static final int SCROLL_PIXEL_AMOUNT = 25;
+
+	private static final String OSM_NOMINATIM_CONNECT_TIMEOUT_IN_MS = &quot;osm_nominatim_connect_timeout_in_ms&quot;;
+
+	private static final String OSM_NOMINATIM_READ_TIMEOUT_IN_MS = &quot;osm_nominatim_read_timeout_in_ms&quot;;
+
+	private static final int MOVE_PIXEL_AMOUNT = 50;
+
+	private static final float PAGE_DOWN_FACTOR = 0.85f;
+
+	private static final int POSITION_HOLDER_LIMIT = 50;
+
+	private static final long WHEEL_ZOOM_MINIMAL_TIME_BETWEEN_CHANGES = 333;
+
+<span class="fc" id="L171">	protected static java.util.logging.Logger logger = freemind.main.Resources</span>
+<span class="fc" id="L172">			.getInstance().getLogger(&quot;plugins.map.FreeMindMapController&quot;);</span>
+
+<span class="nc" id="L174">	private JPopupMenu mPopupMenu = new JPopupMenu();</span>
+
+	private final MindMapController mMindMapController;
+
+	private final JDialog mMapDialog;
+
+	private final MapDialog mMapHook;
+
+	private Point lastDragPoint;
+	private Point mDragStartingPoint;
+
+<span class="nc" id="L185">	private boolean mMovementEnabled = true;</span>
+
+<span class="nc" id="L187">	private boolean isMoving = false;</span>
+
+<span class="nc" id="L189">	private boolean mClickEnabled = true;</span>
+
+<span class="nc" id="L191">	private int movementMouseButton = MouseEvent.BUTTON1;</span>
+<span class="nc" id="L192">	private int movementMouseButtonMask = MouseEvent.BUTTON1_DOWN_MASK;</span>
+
+<span class="nc" id="L194">	private boolean mWheelZoomEnabled = true;</span>
+
+	private JPopupMenu mContextPopupMenu;
+
+	private MapNodePositionHolder mCurrentPopupPositionHolder;
+
+<span class="nc" id="L200">	private boolean isMapNodeMoving = false;</span>
+
+<span class="nc" id="L202">	private MapNodePositionHolder mMapNodeMovingSource = null;</span>
+
+	private Timer mMouseHitsNodeTimer;
+
+	private boolean mIsRectangularSelect;
+
+	private Coordinate mRectangularStart;
+
+<span class="nc" id="L210">	private Vector mPositionHolderVector = new Vector();</span>
+	/**
+	 * Marks the index of the current position or -1 if none.
+	 */
+<span class="nc" id="L214">	private int mPositionHolderIndex = -1;</span>
+
+	public static class TileSourceStore {
+		TileSource mTileSource;
+		String mLayerName;
+
+		public TileSourceStore(TileSource pTileSource, String pLayerName) {
+<span class="fc" id="L221">			super();</span>
+<span class="fc" id="L222">			mTileSource = pTileSource;</span>
+<span class="fc" id="L223">			mLayerName = pLayerName;</span>
+<span class="fc" id="L224">		}</span>
+
+	}
+
+	public static class TransportMap extends AbstractOsmTileSource {
+
+		// http://b.tile2.opencyclemap.org/transport/14/8800/5373.png
+		private static final String PATTERN = &quot;http://%s.tile2.opencyclemap.org/transport&quot;;
+
+<span class="fc" id="L233">		private static final String[] SERVER = { &quot;a&quot;, &quot;b&quot;, &quot;c&quot; };</span>
+
+<span class="fc" id="L235">		private int SERVER_NUM = 0;</span>
+
+		public TransportMap() {
+<span class="fc" id="L238">			super(&quot;OSM Transport Map&quot;, PATTERN);</span>
+<span class="fc" id="L239">		}</span>
+
+		public String getBaseUrl() {
+<span class="fc" id="L242">			String url = String.format(this.baseUrl,</span>
+<span class="fc" id="L243">					new Object[] { SERVER[SERVER_NUM] });</span>
+<span class="fc" id="L244">			SERVER_NUM = (SERVER_NUM + 1) % SERVER.length;</span>
+<span class="fc" id="L245">			return url;</span>
+		}
+
+		public int getMaxZoom() {
+<span class="nc" id="L249">			return 18;</span>
+		}
+
+		public TileUpdate getTileUpdate() {
+<span class="nc" id="L253">			return TileUpdate.LastModified;</span>
+		}
+	}
+
+	public static class MapQuestOpenMap extends AbstractOsmTileSource {
+
+		// http://otile1.mqcdn.com/tiles/1.0.0/osm/14/8800/5374.png
+		private static final String PATTERN = &quot;http://otile%s.mqcdn.com/tiles/1.0.0/osm&quot;;
+
+<span class="fc" id="L262">		private static final String[] SERVER = { &quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot; };</span>
+
+<span class="fc" id="L264">		private int SERVER_NUM = 0;</span>
+
+		public MapQuestOpenMap() {
+<span class="fc" id="L267">			super(&quot;OSM MapQuest.Open Map&quot;, PATTERN);</span>
+<span class="fc" id="L268">		}</span>
+
+		public String getBaseUrl() {
+<span class="fc" id="L271">			String url = String.format(this.baseUrl,</span>
+<span class="fc" id="L272">					new Object[] { SERVER[SERVER_NUM] });</span>
+<span class="fc" id="L273">			SERVER_NUM = (SERVER_NUM + 1) % SERVER.length;</span>
+<span class="fc" id="L274">			return url;</span>
+		}
+
+		public int getMaxZoom() {
+<span class="nc" id="L278">			return 18;</span>
+		}
+
+		public TileUpdate getTileUpdate() {
+<span class="fc" id="L282">			return TileUpdate.LastModified;</span>
+		}
+	}
+
+<span class="fc" id="L286">	private static TileSourceStore[] sTileSources = new TileSourceStore[] {</span>
+<span class="fc" id="L287">			new TileSourceStore(new OsmTileSource.Mapnik(),</span>
+<span class="fc" id="L288">					MapNodePositionHolderBase.SHORT_MAPNIK),</span>
+<span class="fc" id="L289">			new TileSourceStore(new OsmTileSource.CycleMap(),</span>
+<span class="fc" id="L290">					MapNodePositionHolderBase.SHORT_CYCLE_MAP),</span>
+<span class="fc" id="L291">			new TileSourceStore(new TransportMap(),</span>
+<span class="fc" id="L292">					MapNodePositionHolderBase.SHORT_TRANSPORT_MAP),</span>
+<span class="fc" id="L293">			new TileSourceStore(new MapQuestOpenMap(),</span>
+<span class="fc" id="L294">					MapNodePositionHolderBase.SHORT_MAP_QUEST_OPEN_MAP)</span>
+	/* , new BingAerialTileSource() license problems.... */
+<span class="fc" id="L296">	};</span>
+
+	private final class MapEditTextFieldControl implements
+			EditNodeBase.EditControl {
+		private final NodeView mNodeView;
+		private final MindMapNode mNewNode;
+		private final MindMapNode mTargetNode;
+		private boolean mIsEditOfExistingNode;
+
+<span class="nc" id="L305">		private MapEditTextFieldControl(NodeView pNodeView,</span>
+<span class="nc" id="L306">				MindMapNode pNewNode, MindMapNode pTargetNode, boolean pIsEditOfExistingNode) {</span>
+<span class="nc" id="L307">			mNodeView = pNodeView;</span>
+<span class="nc" id="L308">			mNewNode = pNewNode;</span>
+<span class="nc" id="L309">			mTargetNode = pTargetNode;</span>
+<span class="nc" id="L310">			mIsEditOfExistingNode = pIsEditOfExistingNode;</span>
+<span class="nc" id="L311">		}</span>
+
+		public void cancel() {
+<span class="nc bnc" id="L314" title="All 2 branches missed.">			if (!mIsEditOfExistingNode) {</span>
+<span class="nc" id="L315">				mMindMapController.getView().selectAsTheOnlyOneSelected(</span>
+<span class="nc" id="L316">						mNodeView);</span>
+<span class="nc" id="L317">				mMindMapController.cut(Tools</span>
+<span class="nc" id="L318">						.getVectorWithSingleElement(mNewNode));</span>
+<span class="nc" id="L319">				mMindMapController.select(mMindMapController</span>
+<span class="nc" id="L320">						.getNodeView(mTargetNode));</span>
+			}
+<span class="nc" id="L322">			endEdit();</span>
+<span class="nc" id="L323">		}</span>
+
+		public void ok(String newText) {
+<span class="nc" id="L326">			mMindMapController.setNodeText(mNewNode, newText);</span>
+<span class="nc" id="L327">			MapNodePositionHolderBase hook = placeNode(mNewNode);</span>
+<span class="nc" id="L328">			endEdit();</span>
+<span class="nc" id="L329">		}</span>
+
+		private void endEdit() {
+<span class="nc" id="L332">			setMouseControl(true);</span>
+<span class="nc" id="L333">			mMindMapController.setBlocked(false);</span>
+<span class="nc" id="L334">			mMapDialog.requestFocus();</span>
+<span class="nc" id="L335">		}</span>
+
+		public void split(String newText, int position) {
+<span class="nc" id="L338">		}</span>
+	}
+
+	private final class MapEditNoteTextField extends EditNodeTextField {
+		private final Point mPoint;
+
+		private MapEditNoteTextField(NodeView pNode, String pText,
+				KeyEvent pFirstEvent, ModeController pController,
+<span class="nc" id="L346">				EditControl pEditControl, JComponent pParent, Point pPoint) {</span>
+<span class="nc" id="L347">			super(pNode, pText, pFirstEvent, pController, pEditControl,</span>
+<span class="nc" id="L348">					pParent, pParent);</span>
+<span class="nc" id="L349">			mPoint = pPoint;</span>
+<span class="nc" id="L350">		}</span>
+
+		protected void setTextfieldLoaction(Point pMPoint) {
+<span class="nc" id="L353">			textfield.setLocation(mPoint);</span>
+<span class="nc" id="L354">		}</span>
+
+		protected void addTextfield() {
+			// add to front to make it visible over the map.
+<span class="nc" id="L358">			mParent.add(textfield);</span>
+<span class="nc" id="L359">		}</span>
+	}
+
+	/**
+	 * @author foltin
+	 * @date 16.11.2011
+	 */
+	public class ChangeTileSource extends AbstractAction implements
+			MenuItemSelectedListener {
+
+		private final TileSource mSource;
+
+		/**
+		 * @param pSource
+		 */
+<span class="nc" id="L374">		public ChangeTileSource(TileSource pSource) {</span>
+<span class="nc" id="L375">			super(Resources.getInstance().getText(</span>
+<span class="nc" id="L376">					&quot;map_ChangeTileSource_&quot; + getTileSourceName(pSource)));</span>
+<span class="nc" id="L377">			mSource = pSource;</span>
+
+<span class="nc" id="L379">		}</span>
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see
+		 * java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent
+		 * )
+		 */
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc" id="L389">			map.setTileSource(mSource);</span>
+<span class="nc" id="L390">		}</span>
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see
+		 * freemind.controller.MenuItemSelectedListener#isSelected(javax.swing
+		 * .JMenuItem, javax.swing.Action)
+		 */
+		public boolean isSelected(JMenuItem pCheckItem, Action pAction) {
+<span class="nc bnc" id="L400" title="All 2 branches missed.">			return getTileSource() == mSource;</span>
+		}
+
+	}
+
+	/**
+	 * @author foltin
+	 * @date 31.10.2011
+	 */
+	private final class PlaceNodeAction extends AbstractAction {
+
+<span class="nc" id="L411">		public PlaceNodeAction() {</span>
+<span class="nc" id="L412">			super(getText(&quot;MapControllerPopupDialog.place&quot;),</span>
+<span class="nc" id="L413">					MapNodePositionHolder.getMapLocationIcon());</span>
+<span class="nc" id="L414">		}</span>
+
+		public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L417">			placeNode(mMindMapController.getSelected());</span>
+<span class="nc" id="L418">		}</span>
+	}
+
+	/**
+	 * @author foltin
+	 * @date 31.10.2011
+	 */
+	private final class ShowNodeAction extends AbstractAction {
+
+<span class="nc" id="L427">		public ShowNodeAction() {</span>
+<span class="nc" id="L428">			super(getText(&quot;MapControllerPopupDialog.show_nodes&quot;));</span>
+<span class="nc" id="L429">		}</span>
+
+		public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc" id="L432">			showSelectedNodes();</span>
+<span class="nc" id="L433">		}</span>
+	}
+
+	/**
+	 * @author foltin
+	 * @date 31.10.2011
+	 */
+	private abstract class MoveAction extends AbstractAction {
+
+		/**
+		 * @param pText
+		 */
+<span class="nc" id="L445">		public MoveAction(String pText) {</span>
+<span class="nc" id="L446">			super(pText);</span>
+<span class="nc" id="L447">		}</span>
+
+		public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L450" title="All 2 branches missed.">			if (!searchForNearestNode(false)) {</span>
+<span class="nc" id="L451">				searchForNearestNode(true);</span>
+			}
+<span class="nc" id="L453">		}</span>
+
+		/**
+		 * @param alternative
+		 * @return true, if a node was found
+		 */
+		protected boolean searchForNearestNode(boolean alternative) {
+<span class="nc" id="L460">			boolean returnValue = false;</span>
+<span class="nc" id="L461">			Coordinate cursorPosition = getMap().getCursorPosition();</span>
+			// get map marker locations:
+<span class="nc" id="L463">			HashSet mapNodePositionHolders = new HashSet(</span>
+<span class="nc" id="L464">					mMapHook.getMapNodePositionHolders());</span>
+<span class="nc" id="L465">			logger.fine(&quot;Before removal &quot; + mapNodePositionHolders.size()</span>
+<span class="nc" id="L466">					+ &quot; elements&quot;);</span>
+			// take only those elements in the correct quadrant (eg. -45° -
+			// +45°) which are not identical to the current
+<span class="nc bnc" id="L469" title="All 2 branches missed.">			for (Iterator it = mapNodePositionHolders.iterator(); it.hasNext();) {</span>
+<span class="nc" id="L470">				MapNodePositionHolder holder = (MapNodePositionHolder) it</span>
+<span class="nc" id="L471">						.next();</span>
+<span class="nc" id="L472">				Coordinate pointPosition = holder.getPosition();</span>
+<span class="nc" id="L473">				boolean inDestinationQuadrant = destinationQuadrantCheck(</span>
+<span class="nc" id="L474">						cursorPosition, pointPosition, alternative);</span>
+<span class="nc bnc" id="L475" title="All 2 branches missed.">				if (!inDestinationQuadrant</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">						|| safeEquals(pointPosition, cursorPosition)) {</span>
+<span class="nc" id="L477">					it.remove();</span>
+				}
+			}
+<span class="nc" id="L480">			logger.fine(&quot;After removal &quot; + mapNodePositionHolders.size()</span>
+<span class="nc" id="L481">					+ &quot; elements&quot;);</span>
+			// now, we have all points on the left angle (eg. -45° to 45°) and
+			// search
+			// for the nearest
+<span class="nc" id="L485">			MapNodePositionHolder nearest = null;</span>
+<span class="nc" id="L486">			double distance = Double.MAX_VALUE;</span>
+<span class="nc bnc" id="L487" title="All 2 branches missed.">			for (Iterator it = mapNodePositionHolders.iterator(); it.hasNext();) {</span>
+<span class="nc" id="L488">				MapNodePositionHolder holder = (MapNodePositionHolder) it</span>
+<span class="nc" id="L489">						.next();</span>
+<span class="nc" id="L490">				double newDist = dist(holder.getPosition(), cursorPosition);</span>
+<span class="nc" id="L491">				logger.fine(&quot;Position &quot; + holder + &quot; is &quot; + newDist);</span>
+<span class="nc bnc" id="L492" title="All 2 branches missed.">				if (newDist &lt; distance) {</span>
+<span class="nc" id="L493">					distance = newDist;</span>
+<span class="nc" id="L494">					nearest = holder;</span>
+				}
+			}
+<span class="nc bnc" id="L497" title="All 2 branches missed.">			if (nearest != null) {</span>
+<span class="nc" id="L498">				selectNode(nearest.getNode());</span>
+				// don't change the zoom
+<span class="nc" id="L500">				setCursorPosition(nearest, map.getZoom());</span>
+<span class="nc" id="L501">				returnValue = true;</span>
+			}
+<span class="nc" id="L503">			return returnValue;</span>
+		}
+
+		public boolean destinationQuadrantCheck(Coordinate cursorPosition,
+				Coordinate pointPosition, boolean alternative) {
+<span class="nc" id="L508">			int mapZoomMax = getMaxZoom();</span>
+<span class="nc" id="L509">			int x1 = OsmMercator.LonToX(cursorPosition.getLon(), mapZoomMax);</span>
+<span class="nc" id="L510">			int y1 = OsmMercator.LatToY(cursorPosition.getLat(), mapZoomMax);</span>
+<span class="nc" id="L511">			int x2 = OsmMercator.LonToX(pointPosition.getLon(), mapZoomMax);</span>
+<span class="nc" id="L512">			int y2 = OsmMercator.LatToY(pointPosition.getLat(), mapZoomMax);</span>
+<span class="nc" id="L513">			return destinationQuadrantCheck(x1, y1, x2, y2, alternative);</span>
+		}
+
+		/**
+		 * If no point was found from the destinationQuadrantCheck, here,
+		 * alternative = true is tried
+		 */
+		public abstract boolean destinationQuadrantCheck(int x1, int y1,
+				int x2, int y2, boolean alternative);
+
+		/**
+		 * @param pPointPosition
+		 * @param pCursorPosition
+		 * @return
+		 */
+		private boolean safeEquals(Coordinate p1, Coordinate p2) {
+<span class="nc bnc" id="L529" title="All 6 branches missed.">			return (p1 != null &amp;&amp; p2 != null &amp;&amp; p1.getLon() == p2.getLon() &amp;&amp; p1</span>
+<span class="nc bnc" id="L530" title="All 6 branches missed.">					.getLat() == p2.getLat()) || (p1 == null &amp;&amp; p2 == null);</span>
+		}
+
+		/**
+		 * @param pPosition
+		 * @param pCursorPosition
+		 * @return
+		 */
+		private double dist(Coordinate p1, Coordinate p2) {
+<span class="nc" id="L539">			return OsmMercator.getDistance(p1.getLat(), p1.getLon(),</span>
+<span class="nc" id="L540">					p2.getLat(), p2.getLon());</span>
+		}
+	}
+
+	private final class MoveLeftAction extends MoveAction {
+		/**
+		 * 
+		 */
+<span class="nc" id="L548">		public MoveLeftAction() {</span>
+<span class="nc" id="L549">			super(getText(&quot;MapControllerPopupDialog.moveLeft&quot;));</span>
+<span class="nc" id="L550">		}</span>
+
+		public boolean destinationQuadrantCheck(int x1, int y1, int x2, int y2,
+				boolean alternative) {
+<span class="nc bnc" id="L554" title="All 2 branches missed.">			if (alternative)</span>
+<span class="nc bnc" id="L555" title="All 2 branches missed.">				return x2 &lt; x1;</span>
+<span class="nc bnc" id="L556" title="All 4 branches missed.">			return x2 &lt; x1 &amp;&amp; Math.abs(y2 - y1) &lt; Math.abs(x2 - x1);</span>
+		}
+
+	}
+
+	private final class MoveRightAction extends MoveAction {
+		/**
+		 * 
+		 */
+<span class="nc" id="L565">		public MoveRightAction() {</span>
+<span class="nc" id="L566">			super(getText(&quot;MapControllerPopupDialog.moveRight&quot;));</span>
+<span class="nc" id="L567">		}</span>
+
+		public boolean destinationQuadrantCheck(int x1, int y1, int x2, int y2,
+				boolean alternative) {
+<span class="nc bnc" id="L571" title="All 2 branches missed.">			if (alternative)</span>
+<span class="nc bnc" id="L572" title="All 2 branches missed.">				return x2 &gt; x1;</span>
+<span class="nc bnc" id="L573" title="All 4 branches missed.">			return x2 &gt; x1 &amp;&amp; Math.abs(y2 - y1) &lt; Math.abs(x2 - x1);</span>
+		}
+
+	}
+
+	private final class MoveUpAction extends MoveAction {
+		/**
+		 * 
+		 */
+<span class="nc" id="L582">		public MoveUpAction() {</span>
+<span class="nc" id="L583">			super(getText(&quot;MapControllerPopupDialog.moveUp&quot;));</span>
+<span class="nc" id="L584">		}</span>
+
+		public boolean destinationQuadrantCheck(int x1, int y1, int x2, int y2,
+				boolean alternative) {
+<span class="nc bnc" id="L588" title="All 2 branches missed.">			if (alternative)</span>
+<span class="nc bnc" id="L589" title="All 2 branches missed.">				return y2 &lt; y1;</span>
+<span class="nc bnc" id="L590" title="All 4 branches missed.">			return y2 &lt; y1 &amp;&amp; Math.abs(y2 - y1) &gt; Math.abs(x2 - x1);</span>
+		}
+
+	}
+
+	private final class MoveDownAction extends MoveAction {
+		/**
+		 * 
+		 */
+<span class="nc" id="L599">		public MoveDownAction() {</span>
+<span class="nc" id="L600">			super(getText(&quot;MapControllerPopupDialog.moveDown&quot;));</span>
+<span class="nc" id="L601">		}</span>
+
+		public boolean destinationQuadrantCheck(int x1, int y1, int x2, int y2,
+				boolean alternative) {
+<span class="nc bnc" id="L605" title="All 2 branches missed.">			if (alternative)</span>
+<span class="nc bnc" id="L606" title="All 2 branches missed.">				return y2 &gt; y1;</span>
+<span class="nc bnc" id="L607" title="All 4 branches missed.">			return y2 &gt; y1 &amp;&amp; Math.abs(y2 - y1) &gt; Math.abs(x2 - x1);</span>
+		}
+
+	}
+
+	private final class MoveForwardAction extends AbstractAction implements
+			MenuItemEnabledListener {
+<span class="nc" id="L614">		public MoveForwardAction() {</span>
+<span class="nc" id="L615">			super(getText(&quot;MapControllerPopupDialog.moveForward&quot;));</span>
+<span class="nc" id="L616">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc bnc" id="L619" title="All 2 branches missed.">			if (isEnabledCheck()) {</span>
+<span class="nc" id="L620">				PositionHolder posHolder = (PositionHolder) getPositionHolderVector()</span>
+<span class="nc" id="L621">						.get(getPositionHolderIndex() + 1);</span>
+<span class="nc" id="L622">				getMap().setCursorPosition(posHolder.getCoordinate());</span>
+<span class="nc" id="L623">				map.setDisplayPositionByLatLon(posHolder.lat, posHolder.lon,</span>
+<span class="nc" id="L624">						posHolder.zoom);</span>
+<span class="nc" id="L625">				setPositionHolderIndex(getPositionHolderIndex() + 1);</span>
+			}
+<span class="nc" id="L627">		}</span>
+
+		protected boolean isEnabledCheck() {
+<span class="nc bnc" id="L630" title="All 4 branches missed.">			return getPositionHolderIndex() &gt;= 0</span>
+<span class="nc" id="L631">					&amp;&amp; getPositionHolderIndex() &lt; getPositionHolderVector()</span>
+<span class="nc" id="L632">							.size() - 1;</span>
+		}
+
+		public boolean isEnabled(JMenuItem pItem, Action pAction) {
+<span class="nc" id="L636">			return isEnabledCheck();</span>
+		}
+
+	}
+
+	private final class MoveBackwardAction extends AbstractAction implements
+			MenuItemEnabledListener {
+<span class="nc" id="L643">		public MoveBackwardAction() {</span>
+<span class="nc" id="L644">			super(getText(&quot;MapControllerPopupDialog.moveBackward&quot;));</span>
+<span class="nc" id="L645">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc bnc" id="L648" title="All 2 branches missed.">			if (isEnabledCheck()) {</span>
+<span class="nc" id="L649">				PositionHolder posHolder = (PositionHolder) getPositionHolderVector()</span>
+<span class="nc" id="L650">						.get(getPositionHolderIndex() - 1);</span>
+<span class="nc" id="L651">				getMap().setCursorPosition(posHolder.getCoordinate());</span>
+<span class="nc" id="L652">				map.setDisplayPositionByLatLon(posHolder.lat, posHolder.lon,</span>
+<span class="nc" id="L653">						posHolder.zoom);</span>
+<span class="nc" id="L654">				setPositionHolderIndex(getPositionHolderIndex() - 1);</span>
+			}
+<span class="nc" id="L656">		}</span>
+
+		protected boolean isEnabledCheck() {
+<span class="nc bnc" id="L659" title="All 2 branches missed.">			return getPositionHolderIndex() &gt; 0;</span>
+		}
+
+		public boolean isEnabled(JMenuItem pItem, Action pAction) {
+<span class="nc" id="L663">			return isEnabledCheck();</span>
+		}
+
+	}
+
+	public final static class PositionHolder {
+		double lat;
+		double lon;
+		int zoom;
+
+		public PositionHolder(double pLat, double pLon, int pZoom) {
+<span class="fc" id="L674">			super();</span>
+<span class="fc" id="L675">			lat = pLat;</span>
+<span class="fc" id="L676">			lon = pLon;</span>
+<span class="fc" id="L677">			zoom = pZoom;</span>
+<span class="fc" id="L678">		}</span>
+
+		public String toString() {
+<span class="fc" id="L681">			return &quot;PositionHolder [lat=&quot; + lat + &quot;, lon=&quot; + lon + &quot;, zoom=&quot;</span>
+<span class="fc" id="L682">					+ zoom + &quot;]&quot;;</span>
+		}
+
+		public Coordinate getCoordinate() {
+<span class="fc" id="L686">			return new Coordinate(lat, lon);</span>
+		}
+
+		public int hashCode() {
+<span class="nc" id="L690">			final int prime = 31;</span>
+<span class="nc" id="L691">			int result = 1;</span>
+			long temp;
+<span class="nc" id="L693">			temp = Double.doubleToLongBits(lat);</span>
+<span class="nc" id="L694">			result = prime * result + (int) (temp ^ (temp &gt;&gt;&gt; 32));</span>
+<span class="nc" id="L695">			temp = Double.doubleToLongBits(lon);</span>
+<span class="nc" id="L696">			result = prime * result + (int) (temp ^ (temp &gt;&gt;&gt; 32));</span>
+<span class="nc" id="L697">			result = prime * result + zoom;</span>
+<span class="nc" id="L698">			return result;</span>
+		}
+
+		public boolean equals(Object obj) {
+<span class="nc bnc" id="L702" title="All 2 branches missed.">			if (this == obj)</span>
+<span class="nc" id="L703">				return true;</span>
+<span class="nc bnc" id="L704" title="All 2 branches missed.">			if (obj == null)</span>
+<span class="nc" id="L705">				return false;</span>
+<span class="nc bnc" id="L706" title="All 2 branches missed.">			if (getClass() != obj.getClass())</span>
+<span class="nc" id="L707">				return false;</span>
+<span class="nc" id="L708">			PositionHolder other = (PositionHolder) obj;</span>
+<span class="nc bnc" id="L709" title="All 2 branches missed.">			if (Double.doubleToLongBits(lat) != Double</span>
+<span class="nc" id="L710">					.doubleToLongBits(other.lat))</span>
+<span class="nc" id="L711">				return false;</span>
+<span class="nc bnc" id="L712" title="All 2 branches missed.">			if (Double.doubleToLongBits(lon) != Double</span>
+<span class="nc" id="L713">					.doubleToLongBits(other.lon))</span>
+<span class="nc" id="L714">				return false;</span>
+<span class="nc bnc" id="L715" title="All 2 branches missed.">			if (zoom != other.zoom)</span>
+<span class="nc" id="L716">				return false;</span>
+<span class="nc" id="L717">			return true;</span>
+		}
+
+	}
+
+	private final class MoveHomeAction extends AbstractAction implements
+			MenuItemEnabledListener {
+
+<span class="nc" id="L725">		public MoveHomeAction() {</span>
+<span class="nc" id="L726">			super(getText(&quot;MapControllerPopupDialog.MoveHome&quot;));</span>
+<span class="nc" id="L727">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc" id="L730">			PositionHolder posHolder = getPosHolder();</span>
+<span class="nc bnc" id="L731" title="All 2 branches missed.">			if (posHolder == null) {</span>
+<span class="nc" id="L732">				return;</span>
+			}
+<span class="nc" id="L734">			setZoom(posHolder.zoom);</span>
+<span class="nc" id="L735">			Coordinate coordinates = posHolder.getCoordinate();</span>
+<span class="nc" id="L736">			setCursorPosition(coordinates);</span>
+<span class="nc" id="L737">		}</span>
+
+		public PositionHolder getPosHolder() {
+			try {
+<span class="nc" id="L741">				String homeProperty = Resources.getInstance().getProperty(</span>
+<span class="nc" id="L742">						NODE_MAP_HOME_PROPERTY);</span>
+<span class="nc bnc" id="L743" title="All 4 branches missed.">				if (homeProperty == null || homeProperty.isEmpty()) {</span>
+<span class="nc" id="L744">					return null;</span>
+				}
+<span class="nc" id="L746">				String[] splitResult = homeProperty.split(&quot;:&quot;);</span>
+<span class="nc bnc" id="L747" title="All 2 branches missed.">				if (splitResult.length != 3) {</span>
+<span class="nc" id="L748">					return null;</span>
+				}
+<span class="nc" id="L750">				double lat = Double.parseDouble(splitResult[0]);</span>
+<span class="nc" id="L751">				double lon = Double.parseDouble(splitResult[1]);</span>
+<span class="nc" id="L752">				int zoom = Integer.parseInt(splitResult[2]);</span>
+<span class="nc" id="L753">				return new PositionHolder(lat, lon, zoom);</span>
+<span class="nc" id="L754">			} catch (Exception e) {</span>
+<span class="nc" id="L755">				freemind.main.Resources.getInstance().logException(e);</span>
+<span class="nc" id="L756">				return null;</span>
+			}
+		}
+
+		public boolean isEnabled(JMenuItem pItem, Action pAction) {
+<span class="nc bnc" id="L761" title="All 2 branches missed.">			return getPosHolder() != null;</span>
+		}
+
+	}
+
+	private final class SetHomeAction extends AbstractAction {
+		/**
+		 * 
+		 */
+<span class="nc" id="L770">		public SetHomeAction() {</span>
+<span class="nc" id="L771">			super(getText(&quot;MapControllerPopupDialog.SetHome&quot;));</span>
+<span class="nc" id="L772">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc" id="L775">			Coordinate cursorPosition = getMap().getCursorPosition();</span>
+<span class="nc" id="L776">			String propertyValue = cursorPosition.getLat() + &quot;:&quot;</span>
+<span class="nc" id="L777">					+ cursorPosition.getLon() + &quot;:&quot; + map.getZoom();</span>
+<span class="nc" id="L778">			mMindMapController.getController().setProperty(</span>
+<span class="nc" id="L779">					NODE_MAP_HOME_PROPERTY, propertyValue);</span>
+<span class="nc" id="L780">		}</span>
+
+	}
+
+	private final class SetDisplayToFitMapMarkers extends AbstractAction {
+
+<span class="nc" id="L786">		public SetDisplayToFitMapMarkers() {</span>
+<span class="nc" id="L787">			super(getText(&quot;MapControllerPopupDialog.SetDisplayToFitMapMarkers&quot;));</span>
+<span class="nc" id="L788">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc" id="L791">			map.setDisplayToFitMapMarkers();</span>
+<span class="nc" id="L792">		}</span>
+
+	}
+
+	private final class ShowMapMarker extends AbstractAction implements
+			MenuItemSelectedListener {
+
+<span class="nc" id="L799">		public ShowMapMarker() {</span>
+<span class="nc" id="L800">			super(getText(&quot;MapControllerPopupDialog.ShowMapMarker&quot;));</span>
+<span class="nc" id="L801">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc bnc" id="L804" title="All 2 branches missed.">			map.setMapMarkerVisible(!map.getMapMarkersVisible());</span>
+<span class="nc" id="L805">		}</span>
+
+		public boolean isSelected(JMenuItem pCheckItem, Action pAction) {
+<span class="nc" id="L808">			return map.getMapMarkersVisible();</span>
+		}
+
+	}
+
+	private final class TileGridVisible extends AbstractAction implements
+			MenuItemSelectedListener {
+
+<span class="nc" id="L816">		public TileGridVisible() {</span>
+<span class="nc" id="L817">			super(getText(&quot;MapControllerPopupDialog.TileGridVisible&quot;));</span>
+<span class="nc" id="L818">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc bnc" id="L821" title="All 2 branches missed.">			map.setTileGridVisible(!map.isTileGridVisible());</span>
+<span class="nc" id="L822">		}</span>
+
+		public boolean isSelected(JMenuItem pCheckItem, Action pAction) {
+<span class="nc" id="L825">			return map.isTileGridVisible();</span>
+		}
+
+	}
+
+	private final class ZoomControlsVisible extends AbstractAction implements
+			MenuItemSelectedListener {
+
+<span class="nc" id="L833">		public ZoomControlsVisible() {</span>
+<span class="nc" id="L834">			super(getText(&quot;MapControllerPopupDialog.ZoomControlsVisible&quot;));</span>
+<span class="nc" id="L835">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc bnc" id="L838" title="All 2 branches missed.">			map.setZoomContolsVisible(!map.getZoomContolsVisible());</span>
+<span class="nc" id="L839">		}</span>
+
+		public boolean isSelected(JMenuItem pCheckItem, Action pAction) {
+<span class="nc" id="L842">			return map.getZoomContolsVisible();</span>
+		}
+
+	}
+
+	private final class HideFoldedNodes extends AbstractAction implements
+			MenuItemSelectedListener {
+
+<span class="nc" id="L850">		public HideFoldedNodes() {</span>
+<span class="nc" id="L851">			super(getText(&quot;MapControllerPopupDialog.HideFoldedNodes&quot;));</span>
+<span class="nc" id="L852">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc bnc" id="L855" title="All 2 branches missed.">			getMap().setHideFoldedNodes(!getMap().isHideFoldedNodes());</span>
+<span class="nc" id="L856">			mMapHook.addMarkersToMap();</span>
+<span class="nc" id="L857">		}</span>
+
+		public boolean isSelected(JMenuItem pCheckItem, Action pAction) {
+<span class="nc" id="L860">			return getMap().isHideFoldedNodes();</span>
+		}
+
+	}
+
+	private final class SearchControlVisible extends AbstractAction implements
+			MenuItemSelectedListener {
+
+<span class="nc" id="L868">		public SearchControlVisible() {</span>
+<span class="nc" id="L869">			super(getText(&quot;MapControllerPopupDialog.SearchControlVisible&quot;));</span>
+<span class="nc" id="L870">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc" id="L873">			mMapHook.toggleSearchBar();</span>
+<span class="nc" id="L874">		}</span>
+
+		public boolean isSelected(JMenuItem pCheckItem, Action pAction) {
+<span class="nc" id="L877">			return mMapHook.isSearchBarVisible();</span>
+		}
+
+	}
+
+	private final class LimitSearchToRegionAction extends AbstractAction
+			implements MenuItemSelectedListener {
+
+<span class="nc" id="L885">		public LimitSearchToRegionAction() {</span>
+<span class="nc" id="L886">			super(getText(&quot;MapControllerPopupDialog.LimitSearchToRegionAction&quot;));</span>
+<span class="nc" id="L887">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc" id="L890">			mMapHook.toggleLimitSearchToRegion();</span>
+<span class="nc" id="L891">			mMapHook.focusSearchTerm();</span>
+<span class="nc" id="L892">		}</span>
+
+		public boolean isSelected(JMenuItem pCheckItem, Action pAction) {
+<span class="nc" id="L895">			return mMapHook.isLimitSearchToRegion();</span>
+		}
+
+	}
+
+	private final class GotoSearch extends AbstractAction {
+
+<span class="nc" id="L902">		public GotoSearch() {</span>
+<span class="nc" id="L903">			super(getText(&quot;MapControllerPopupDialog.GotoSearch&quot;));</span>
+<span class="nc" id="L904">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc bnc" id="L907" title="All 2 branches missed.">			if (!mMapHook.isSearchBarVisible()) {</span>
+<span class="nc" id="L908">				mMapHook.toggleSearchBar();</span>
+<span class="nc" id="L909">			} else {</span>
+<span class="nc" id="L910">				mMapHook.focusSearchTerm();</span>
+			}
+<span class="nc" id="L912">		}</span>
+	}
+
+	private final class AddMapPictureToNode extends AbstractAction {
+
+<span class="nc" id="L917">		public AddMapPictureToNode() {</span>
+<span class="nc" id="L918">			super(getText(&quot;MapControllerPopupDialog.AddMapPictureToNode&quot;));</span>
+<span class="nc" id="L919">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc" id="L922">			addMapPictureToNode();</span>
+<span class="nc" id="L923">		}</span>
+
+	}
+
+	private final class NewNodeAction extends AbstractAction {
+
+<span class="nc" id="L929">		public NewNodeAction() {</span>
+<span class="nc" id="L930">			super(getText(&quot;MapControllerPopupDialog.NewNodeAction&quot;));</span>
+<span class="nc" id="L931">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc" id="L934">			Point pos = getMap().getMapPosition(getMap().getCursorPosition(),</span>
+<span class="nc" id="L935">					true);</span>
+<span class="nc" id="L936">			MouseEvent e = new MouseEvent(map, 0, 0, 0, pos.x, pos.y, 1, false);</span>
+<span class="nc" id="L937">			newNode(e);</span>
+<span class="nc" id="L938">		}</span>
+
+	}
+
+	private final class NewNodeReverseLookupAction extends AbstractAction {
+
+<span class="nc" id="L944">		public NewNodeReverseLookupAction() {</span>
+<span class="nc" id="L945">			super(</span>
+<span class="nc" id="L946">					getText(&quot;MapControllerPopupDialog.NewNodeReverseLookupAction&quot;));</span>
+<span class="nc" id="L947">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc" id="L950">			Coordinate pos = getMap().getCursorPosition();</span>
+<span class="nc" id="L951">			Reversegeocode reverseLookup = getReverseLookup(pos, getMap()</span>
+<span class="nc" id="L952">					.getZoom());</span>
+<span class="nc bnc" id="L953" title="All 2 branches missed.">			if (reverseLookup != null) {</span>
+<span class="nc" id="L954">				for (Iterator it = reverseLookup.getListResultList().iterator(); it</span>
+<span class="nc bnc" id="L955" title="All 2 branches missed.">						.hasNext();) {</span>
+<span class="nc" id="L956">					Result result = (Result) it.next();</span>
+<span class="nc" id="L957">					addNode(mMindMapController.getSelected(),</span>
+<span class="nc" id="L958">							result.getContent(), result.getLat(), result.getLon());</span>
+				}
+			}
+<span class="nc" id="L961">		}</span>
+
+	}
+
+	private final class EditNodeInContextMenu extends AbstractAction {
+
+<span class="nc" id="L967">		public EditNodeInContextMenu() {</span>
+<span class="nc" id="L968">			super(getText(&quot;MapControllerPopupDialog.EditNodeInContextMenu&quot;));</span>
+<span class="nc" id="L969">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc bnc" id="L972" title="All 2 branches missed.">			if (mCurrentPopupPositionHolder == null) {</span>
+<span class="nc" id="L973">				return;</span>
+			}
+<span class="nc" id="L975">			setCursorPosition(mCurrentPopupPositionHolder.getPosition());</span>
+<span class="nc" id="L976">			Point pos = getMap().getMapPosition(</span>
+<span class="nc" id="L977">					mCurrentPopupPositionHolder.getPosition(), true);</span>
+			// unfold node (and its parents):
+<span class="nc" id="L979">			MindMapNode node = mCurrentPopupPositionHolder.getNode();</span>
+<span class="nc bnc" id="L980" title="All 2 branches missed.">			while (!node.isRoot()) {</span>
+<span class="nc bnc" id="L981" title="All 2 branches missed.">				if (node.isFolded()) {</span>
+<span class="nc" id="L982">					mMindMapController.setFolded(node, false);</span>
+				}
+<span class="nc" id="L984">				node = node.getParentNode();</span>
+			}
+<span class="nc" id="L986">			pos = MapMarkerLocation.adjustToTextfieldLocation(pos);</span>
+<span class="nc" id="L987">			MouseEvent e = new MouseEvent(map, 0, 0, 0, pos.x, pos.y, 1, false);</span>
+<span class="nc" id="L988">			editNode(mCurrentPopupPositionHolder, e);</span>
+<span class="nc" id="L989">		}</span>
+
+	}
+
+	private final class MaxmimalZoomToCursorAction extends AbstractAction {
+
+		private static final int CURSOR_MAXIMAL_ZOOM_HANDBREAK = 2;
+
+<span class="nc" id="L997">		public MaxmimalZoomToCursorAction() {</span>
+<span class="nc" id="L998">			super(</span>
+<span class="nc" id="L999">					getText(&quot;MapControllerPopupDialog.MaxmimalZoomToCursorAction&quot;));</span>
+<span class="nc" id="L1000">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc" id="L1003">			Coordinate cursorPosition = getMap().getCursorPosition();</span>
+<span class="nc" id="L1004">			int zoom = getMaxZoom() - CURSOR_MAXIMAL_ZOOM_HANDBREAK;</span>
+<span class="nc bnc" id="L1005" title="All 2 branches missed.">			if (getMap().getZoom() &gt;= zoom) {</span>
+<span class="nc" id="L1006">				zoom += CURSOR_MAXIMAL_ZOOM_HANDBREAK;</span>
+			}
+<span class="nc" id="L1008">			map.setDisplayPositionByLatLon(cursorPosition.getLat(),</span>
+<span class="nc" id="L1009">					cursorPosition.getLon(), zoom);</span>
+<span class="nc" id="L1010">		}</span>
+
+	}
+
+	private final class ZoomAction extends AbstractAction {
+
+		private final int mZoomDelta;
+
+<span class="nc" id="L1018">		public ZoomAction(int pZoomDelta) {</span>
+<span class="nc" id="L1019">			super(getText(&quot;MapControllerPopupDialog.ZoomAction&quot; + pZoomDelta));</span>
+<span class="nc" id="L1020">			mZoomDelta = pZoomDelta;</span>
+<span class="nc" id="L1021">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc" id="L1024">			Coordinate mapCenter = getMap().getPosition();</span>
+<span class="nc" id="L1025">			int zoom = getMap().getZoom() + mZoomDelta;</span>
+<span class="nc bnc" id="L1026" title="All 2 branches missed.">			if (zoom &lt; JMapViewer.MIN_ZOOM) {</span>
+<span class="nc" id="L1027">				zoom = JMapViewer.MIN_ZOOM;</span>
+			}
+<span class="nc bnc" id="L1029" title="All 2 branches missed.">			if (zoom &gt; getMaxZoom()) {</span>
+<span class="nc" id="L1030">				zoom = getMaxZoom();</span>
+			}
+<span class="nc" id="L1032">			map.setDisplayPositionByLatLon(mapCenter.getLat(),</span>
+<span class="nc" id="L1033">					mapCenter.getLon(), zoom);</span>
+<span class="nc" id="L1034">		}</span>
+
+	}
+
+	private final class CopyLinkToClipboardAction extends AbstractAction {
+
+<span class="nc" id="L1040">		public CopyLinkToClipboardAction() {</span>
+<span class="nc" id="L1041">			super(getText(&quot;MapControllerPopupDialog.CopyLinkToClipboardAction&quot;));</span>
+<span class="nc" id="L1042">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+			String link;
+<span class="nc bnc" id="L1046" title="All 2 branches missed.">			if (mCurrentPopupPositionHolder != null) {</span>
+<span class="nc" id="L1047">				link = getLink(mCurrentPopupPositionHolder);</span>
+<span class="nc" id="L1048">			} else {</span>
+<span class="nc" id="L1049">				Coordinate cursorPosition = getMap().getCursorPosition();</span>
+<span class="nc" id="L1050">				Coordinate position = getMap().getPosition();</span>
+<span class="nc" id="L1051">				int zoom = getMap().getZoom();</span>
+<span class="nc" id="L1052">				link = getLink(getTileSourceAsString(), cursorPosition,</span>
+<span class="nc" id="L1053">						position, zoom);</span>
+			}
+			// Put link into clipboard.
+<span class="nc" id="L1056">			Tools.getClipboard().setContents(new StringSelection(link), null);</span>
+<span class="nc" id="L1057">		}</span>
+
+	}
+
+	private final class CopyCoordinatesToClipboardAction extends AbstractAction {
+
+<span class="nc" id="L1063">		public CopyCoordinatesToClipboardAction() {</span>
+<span class="nc" id="L1064">			super(</span>
+<span class="nc" id="L1065">					getText(&quot;MapControllerPopupDialog.CopyCoordinatesToClipboardAction&quot;));</span>
+<span class="nc" id="L1066">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+			String coordinates;
+<span class="nc bnc" id="L1070" title="All 2 branches missed.">			if (mCurrentPopupPositionHolder != null) {</span>
+<span class="nc" id="L1071">				coordinates = getCoordinates(mCurrentPopupPositionHolder</span>
+<span class="nc" id="L1072">						.getPosition());</span>
+<span class="nc" id="L1073">			} else {</span>
+<span class="nc" id="L1074">				coordinates = getCoordinates(getMap().getCursorPosition());</span>
+			}
+			// Put Coordinates into clipboard.
+<span class="nc" id="L1077">			Tools.getClipboard().setContents(new StringSelection(coordinates),</span>
+<span class="nc" id="L1078">					null);</span>
+<span class="nc" id="L1079">		}</span>
+
+		/**
+		 * @param pCoordinate
+		 * @return
+		 */
+		private String getCoordinates(Coordinate pCoordinate) {
+<span class="nc" id="L1086">			return pCoordinate.getLat() + &quot; &quot; + pCoordinate.getLon();</span>
+		}
+
+	}
+
+	private final class ShowNodeMapInContextMenu extends AbstractAction {
+
+<span class="nc" id="L1093">		public ShowNodeMapInContextMenu() {</span>
+<span class="nc" id="L1094">			super(getText(&quot;MapControllerPopupDialog.ShowNodeMapInContextMenu&quot;));</span>
+<span class="nc" id="L1095">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc bnc" id="L1098" title="All 2 branches missed.">			if (mCurrentPopupPositionHolder != null) {</span>
+<span class="nc" id="L1099">				showNode(mCurrentPopupPositionHolder);</span>
+			}
+<span class="nc" id="L1101">		}</span>
+
+	}
+
+	private final class SelectNodeInContextMenu extends AbstractAction {
+
+<span class="nc" id="L1107">		public SelectNodeInContextMenu() {</span>
+<span class="nc" id="L1108">			super(getText(&quot;MapControllerPopupDialog.SelectNodeInContextMenu&quot;));</span>
+<span class="nc" id="L1109">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc bnc" id="L1112" title="All 2 branches missed.">			if (mCurrentPopupPositionHolder != null) {</span>
+<span class="nc" id="L1113">				selectContextMenuNode();</span>
+			}
+<span class="nc" id="L1115">		}</span>
+
+	}
+
+	private final class SelectNodeAndCloseInContextMenu extends AbstractAction {
+
+<span class="nc" id="L1121">		public SelectNodeAndCloseInContextMenu() {</span>
+<span class="nc" id="L1122">			super(</span>
+<span class="nc" id="L1123">					getText(&quot;MapControllerPopupDialog.SelectNodeAndCloseInContextMenu&quot;));</span>
+<span class="nc" id="L1124">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc bnc" id="L1127" title="All 2 branches missed.">			if (mCurrentPopupPositionHolder != null) {</span>
+<span class="nc" id="L1128">				selectContextMenuNode();</span>
+<span class="nc" id="L1129">				mMapHook.disposeDialog();</span>
+			}
+<span class="nc" id="L1131">		}</span>
+
+	}
+
+	private final class RemoveNodeLocationInContextMenu extends AbstractAction {
+
+<span class="nc" id="L1137">		public RemoveNodeLocationInContextMenu() {</span>
+<span class="nc" id="L1138">			super(</span>
+<span class="nc" id="L1139">					getText(&quot;MapControllerPopupDialog.RemoveNodeLocationInContextMenu&quot;));</span>
+<span class="nc" id="L1140">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc bnc" id="L1143" title="All 2 branches missed.">			if (mCurrentPopupPositionHolder != null) {</span>
+<span class="nc" id="L1144">				MindMapNode node = mCurrentPopupPositionHolder.getNode();</span>
+<span class="nc" id="L1145">				removeNodePosition(node);</span>
+			}
+<span class="nc" id="L1147">		}</span>
+
+	}
+
+	private final class ExportMapAction extends AbstractAction {
+
+<span class="nc" id="L1153">		public ExportMapAction() {</span>
+<span class="nc" id="L1154">			super(getText(&quot;MapControllerPopupDialog.ExportMapMenu&quot;));</span>
+<span class="nc" id="L1155">		}</span>
+
+		public void actionPerformed(ActionEvent pE) {
+<span class="nc" id="L1158">			File chosenFile = ExportHook.chooseImageFile(&quot;png&quot;,</span>
+<span class="nc" id="L1159">					getText(&quot;Portable_Network_Graphic&quot;), null,</span>
+<span class="nc" id="L1160">					mMindMapController);</span>
+<span class="nc bnc" id="L1161" title="All 2 branches missed.">			if (chosenFile == null) {</span>
+<span class="nc" id="L1162">				return;</span>
+			}
+<span class="nc" id="L1164">			boolean zoomContolsVisible = map.getZoomContolsVisible();</span>
+			try {
+<span class="nc" id="L1166">				mMindMapController.getFrame().setWaitingCursor(true);</span>
+<span class="nc" id="L1167">				map.setZoomContolsVisible(false);</span>
+				// Create an image containing the map:
+<span class="nc" id="L1169">				BufferedImage myImage = (BufferedImage) map.createImage(</span>
+<span class="nc" id="L1170">						map.getWidth(), map.getHeight());</span>
+<span class="nc" id="L1171">				map.print(myImage.getGraphics());</span>
+<span class="nc" id="L1172">				FileOutputStream out = new FileOutputStream(chosenFile);</span>
+<span class="nc" id="L1173">				ImageIO.write(myImage, &quot;png&quot;, out);</span>
+<span class="nc" id="L1174">				out.close();</span>
+<span class="nc" id="L1175">			} catch (IOException e1) {</span>
+<span class="nc" id="L1176">				freemind.main.Resources.getInstance().logException(e1);</span>
+			}
+<span class="nc" id="L1178">			map.setZoomContolsVisible(zoomContolsVisible);</span>
+<span class="nc" id="L1179">			mMindMapController.getFrame().setWaitingCursor(false);</span>
+<span class="nc" id="L1180">			return;</span>
+
+		}
+
+	}
+
+	JCursorMapViewer getMap() {
+<span class="nc" id="L1187">		return (JCursorMapViewer) map;</span>
+	}
+
+	/**
+	 * 
+	 */
+	public void addMapPictureToNode() {
+<span class="nc bnc" id="L1194" title="All 2 branches missed.">		if (mCurrentPopupPositionHolder == null) {</span>
+			// strange.
+<span class="nc" id="L1196">			return;</span>
+		}
+<span class="nc" id="L1198">		addPictureToNode(mCurrentPopupPositionHolder, mMindMapController);</span>
+<span class="nc" id="L1199">	}</span>
+
+	public static void addPictureToNode(MapNodePositionHolder positionHolder,
+			MindMapController mindMapController) {
+		// create picture if not present:
+<span class="nc" id="L1204">		File tooltipFile = positionHolder.getTooltipFile(true);</span>
+<span class="nc bnc" id="L1205" title="All 2 branches missed.">		if (!tooltipFile.exists()) {</span>
+<span class="nc bnc" id="L1206" title="All 2 branches missed.">			if (!positionHolder.createToolTip(true)) {</span>
+				// an error occurred, sorry.
+<span class="nc" id="L1208">				return;</span>
+			}
+		}
+<span class="nc" id="L1211">		MindMapNode selected = positionHolder.getNode();</span>
+<span class="nc" id="L1212">		MindMapNode addNewNode = mindMapController.addNewNode(selected, 0,</span>
+<span class="nc" id="L1213">				selected.isLeft());</span>
+<span class="nc" id="L1214">		mindMapController</span>
+<span class="nc" id="L1215">				.setNodeText(addNewNode, positionHolder.getImageHtml());</span>
+<span class="nc" id="L1216">	}</span>
+
+	public FreeMindMapController(JMapViewer map,
+			MindMapController pMindMapController, final JDialog pMapDialog,
+			MapDialog pMapHook) {
+<span class="nc" id="L1221">		super(map);</span>
+<span class="nc" id="L1222">		mMapHook = pMapHook;</span>
+<span class="nc" id="L1223">		mMindMapController = pMindMapController;</span>
+<span class="nc" id="L1224">		mMapDialog = pMapDialog;</span>
+<span class="nc" id="L1225">		mMouseHitsNodeTimer = new Timer(500, this);</span>
+<span class="nc" id="L1226">		mMouseHitsNodeTimer.setRepeats(false);</span>
+<span class="nc" id="L1227">		Action placeAction = new PlaceNodeAction();</span>
+<span class="nc" id="L1228">		Action showAction = new ShowNodeAction();</span>
+<span class="nc" id="L1229">		mZoomInAction = new ZoomAction(1);</span>
+<span class="nc" id="L1230">		mZoomOutAction = new ZoomAction(-1);</span>
+<span class="nc" id="L1231">		Action setDisplayToFitMapMarkers = new SetDisplayToFitMapMarkers();</span>
+<span class="nc" id="L1232">		Action showMapMarker = new ShowMapMarker();</span>
+<span class="nc" id="L1233">		Action tileGridVisible = new TileGridVisible();</span>
+<span class="nc" id="L1234">		Action zoomControlsVisible = new ZoomControlsVisible();</span>
+<span class="nc" id="L1235">		Action searchControlVisible = new SearchControlVisible();</span>
+<span class="nc" id="L1236">		Action gotoSearch = new GotoSearch();</span>
+<span class="nc" id="L1237">		Action hideFoldedNodes = new HideFoldedNodes();</span>
+<span class="nc" id="L1238">		Action newNodeAction = new NewNodeAction();</span>
+//		Action newNodeReverseLookupAction = new NewNodeReverseLookupAction();
+<span class="nc" id="L1240">		Action maxmimalZoomToCursorAction = new MaxmimalZoomToCursorAction();</span>
+<span class="nc" id="L1241">		Action copyLinkToClipboardAction = new CopyLinkToClipboardAction();</span>
+<span class="nc" id="L1242">		Action copyCoordinatesToClipboardAction = new CopyCoordinatesToClipboardAction();</span>
+<span class="nc" id="L1243">		Action exportAction = new ExportMapAction();</span>
+		/** Menu **/
+<span class="nc" id="L1245">		StructuredMenuHolder menuHolder = new StructuredMenuHolder();</span>
+<span class="nc" id="L1246">		mMenuBar = new JMenuBar();</span>
+<span class="nc" id="L1247">		JMenu mainItem = new JMenu(getText(&quot;MapControllerPopupDialog.Actions&quot;));</span>
+<span class="nc" id="L1248">		menuHolder.addMenu(mainItem, &quot;main/actions/.&quot;);</span>
+<span class="nc" id="L1249">		addAccelerator(menuHolder.addAction(placeAction, &quot;main/actions/place&quot;),</span>
+<span class="nc" id="L1250">				&quot;keystroke_plugins/map/MapDialog_Place&quot;);</span>
+<span class="nc" id="L1251">		menuHolder.addAction(exportAction, &quot;main/actions/exportPng&quot;);</span>
+<span class="nc" id="L1252">		addAccelerator(menuHolder.addAction(pMapHook.getCloseAction(),</span>
+<span class="nc" id="L1253">				&quot;main/actions/close&quot;), &quot;keystroke_plugins/map/MapDialog_Close&quot;);</span>
+
+<span class="nc" id="L1255">		JMenu searchItem = new JMenu(getText(&quot;MapControllerPopupDialog.Search&quot;));</span>
+<span class="nc" id="L1256">		menuHolder.addMenu(searchItem, &quot;main/search/.&quot;);</span>
+<span class="nc" id="L1257">		addAccelerator(menuHolder.addAction(searchControlVisible,</span>
+<span class="nc" id="L1258">				&quot;main/search/showSearchControl&quot;),</span>
+<span class="nc" id="L1259">				&quot;keystroke_plugins/map/MapDialog_toggle_search&quot;);</span>
+<span class="nc" id="L1260">		addAccelerator(</span>
+<span class="nc" id="L1261">				menuHolder.addAction(gotoSearch, &quot;main/search/gotoSearch&quot;),</span>
+<span class="nc" id="L1262">				&quot;keystroke_plugins/map/MapDialog_goto_search&quot;);</span>
+<span class="nc" id="L1263">		addAccelerator(menuHolder.addAction(new LimitSearchToRegionAction(),</span>
+<span class="nc" id="L1264">				&quot;main/search/limitSearchToRegion&quot;),</span>
+<span class="nc" id="L1265">				&quot;keystroke_plugins/map/MapDialog_limitSearchToRegion&quot;);</span>
+<span class="nc" id="L1266">		JMenu viewItem = new JMenu(getText(&quot;MapControllerPopupDialog.Views&quot;));</span>
+<span class="nc" id="L1267">		menuHolder.addMenu(viewItem, &quot;main/view/.&quot;);</span>
+<span class="nc" id="L1268">		menuHolder.addAction(showAction, &quot;main/view/showNode&quot;);</span>
+<span class="nc" id="L1269">		menuHolder.addAction(setDisplayToFitMapMarkers,</span>
+<span class="nc" id="L1270">				&quot;main/view/setDisplayToFitMapMarkers&quot;);</span>
+<span class="nc" id="L1271">		menuHolder.addSeparator(&quot;main/view/&quot;);</span>
+<span class="nc bnc" id="L1272" title="All 2 branches missed.">		for (int i = 0; i &lt; sTileSources.length; i++) {</span>
+<span class="nc" id="L1273">			TileSource source = sTileSources[i].mTileSource;</span>
+<span class="nc" id="L1274">			addAccelerator(menuHolder.addAction(new ChangeTileSource(source),</span>
+<span class="nc" id="L1275">					&quot;main/view/&quot; + i),</span>
+<span class="nc" id="L1276">					&quot;keystroke_plugins/map/MapDialog_tileSource_&quot; + i);</span>
+		}
+<span class="nc" id="L1278">		menuHolder.addSeparator(&quot;main/view/&quot;);</span>
+<span class="nc" id="L1279">		menuHolder.addAction(showMapMarker, &quot;main/view/showMapMarker&quot;);</span>
+<span class="nc" id="L1280">		menuHolder.addAction(tileGridVisible, &quot;main/view/tileGridVisible&quot;);</span>
+<span class="nc" id="L1281">		menuHolder.addAction(zoomControlsVisible,</span>
+<span class="nc" id="L1282">				&quot;main/view/zoomControlsVisible&quot;);</span>
+<span class="nc" id="L1283">		addAccelerator(menuHolder.addAction(hideFoldedNodes,</span>
+<span class="nc" id="L1284">				&quot;main/view/hideFoldedNodes&quot;),</span>
+<span class="nc" id="L1285">				&quot;keystroke_plugins/map/MapDialog_hideFoldedNodes&quot;);</span>
+<span class="nc" id="L1286">		menuHolder.addSeparator(&quot;main/view/&quot;);</span>
+<span class="nc" id="L1287">		addAccelerator(</span>
+<span class="nc" id="L1288">				menuHolder.addAction(mZoomInAction, &quot;main/view/ZoomInAction&quot;),</span>
+<span class="nc" id="L1289">				&quot;keystroke_plugins/map/MapDialog_zoomIn&quot;);</span>
+<span class="nc" id="L1290">		addAccelerator(</span>
+<span class="nc" id="L1291">				menuHolder.addAction(mZoomOutAction, &quot;main/view/ZoomOutAction&quot;),</span>
+<span class="nc" id="L1292">				&quot;keystroke_plugins/map/MapDialog_zoomOut&quot;);</span>
+
+<span class="nc" id="L1294">		JMenu navigationItem = new JMenu(</span>
+<span class="nc" id="L1295">				getText(&quot;MapControllerPopupDialog.Navigation&quot;));</span>
+<span class="nc" id="L1296">		menuHolder.addMenu(navigationItem, &quot;main/navigation/.&quot;);</span>
+		// menuHolder.addSeparator(&quot;main/navigation/&quot;);
+<span class="nc" id="L1298">		addAccelerator(menuHolder.addAction(new SetHomeAction(),</span>
+<span class="nc" id="L1299">				&quot;main/navigation/SetHome&quot;),</span>
+<span class="nc" id="L1300">				&quot;keystroke_plugins/map/MapDialogSetHome&quot;);</span>
+<span class="nc" id="L1301">		addAccelerator(menuHolder.addAction(new MoveHomeAction(),</span>
+<span class="nc" id="L1302">				&quot;main/navigation/MoveHome&quot;),</span>
+<span class="nc" id="L1303">				&quot;keystroke_plugins/map/MapDialogMoveHome&quot;);</span>
+<span class="nc" id="L1304">		menuHolder.addSeparator(&quot;main/navigation/&quot;);</span>
+<span class="nc" id="L1305">		mMoveBackwardAction = new MoveBackwardAction();</span>
+<span class="nc" id="L1306">		addAccelerator(menuHolder.addAction(mMoveBackwardAction,</span>
+<span class="nc" id="L1307">				&quot;main/navigation/moveBackward&quot;),</span>
+<span class="nc" id="L1308">				&quot;keystroke_plugins/map/MapDialog_moveBackward&quot;);</span>
+<span class="nc" id="L1309">		mMoveForwardAction = new MoveForwardAction();</span>
+<span class="nc" id="L1310">		addAccelerator(menuHolder.addAction(mMoveForwardAction,</span>
+<span class="nc" id="L1311">				&quot;main/navigation/moveForward&quot;),</span>
+<span class="nc" id="L1312">				&quot;keystroke_plugins/map/MapDialog_moveForward&quot;);</span>
+<span class="nc" id="L1313">		menuHolder.addSeparator(&quot;main/navigation/&quot;);</span>
+<span class="nc" id="L1314">		addAccelerator(menuHolder.addAction(new MoveLeftAction(),</span>
+<span class="nc" id="L1315">				&quot;main/navigation/moveLeft&quot;),</span>
+<span class="nc" id="L1316">				&quot;keystroke_plugins/map/MapDialog_moveLeft&quot;);</span>
+<span class="nc" id="L1317">		addAccelerator(menuHolder.addAction(new MoveRightAction(),</span>
+<span class="nc" id="L1318">				&quot;main/navigation/moveRight&quot;),</span>
+<span class="nc" id="L1319">				&quot;keystroke_plugins/map/MapDialog_moveRight&quot;);</span>
+<span class="nc" id="L1320">		addAccelerator(menuHolder.addAction(new MoveUpAction(),</span>
+<span class="nc" id="L1321">				&quot;main/navigation/moveUp&quot;),</span>
+<span class="nc" id="L1322">				&quot;keystroke_plugins/map/MapDialog_moveUp&quot;);</span>
+<span class="nc" id="L1323">		addAccelerator(menuHolder.addAction(new MoveDownAction(),</span>
+<span class="nc" id="L1324">				&quot;main/navigation/moveDown&quot;),</span>
+<span class="nc" id="L1325">				&quot;keystroke_plugins/map/MapDialog_moveDown&quot;);</span>
+<span class="nc" id="L1326">		menuHolder.addSeparator(&quot;main/navigation/&quot;);</span>
+
+<span class="nc" id="L1328">		menuHolder.updateMenus(mMenuBar, &quot;main/&quot;);</span>
+<span class="nc" id="L1329">		mMapDialog.setJMenuBar(mMenuBar);</span>
+		/* Popup menu */
+<span class="nc" id="L1331">		menuHolder.addAction(newNodeAction, &quot;popup/newNode&quot;);</span>
+		// currently disabled, as the reverse functionality from
+		// nominatim doesn't convince me.
+//		menuHolder.addAction(newNodeReverseLookupAction,
+//				&quot;popup/newNodeReverseLookup&quot;);
+<span class="nc" id="L1336">		menuHolder.addAction(placeAction, &quot;popup/place&quot;);</span>
+<span class="nc" id="L1337">		menuHolder.addSeparator(&quot;popup/&quot;);</span>
+<span class="nc" id="L1338">		menuHolder.addAction(maxmimalZoomToCursorAction,</span>
+<span class="nc" id="L1339">				&quot;popup/maxmimalZoomToCursorAction&quot;);</span>
+<span class="nc" id="L1340">		menuHolder.addSeparator(&quot;popup/&quot;);</span>
+<span class="nc" id="L1341">		menuHolder.addAction(copyLinkToClipboardAction,</span>
+<span class="nc" id="L1342">				&quot;popup/copyLinkToClipboardAction&quot;);</span>
+<span class="nc" id="L1343">		menuHolder.addAction(copyCoordinatesToClipboardAction,</span>
+<span class="nc" id="L1344">				&quot;popup/copyCoordinatesToClipboardAction&quot;);</span>
+<span class="nc" id="L1345">		menuHolder.updateMenus(mPopupMenu, &quot;popup/&quot;);</span>
+		/*
+		 * map location context menu
+		 */
+<span class="nc" id="L1349">		menuHolder.addAction(new EditNodeInContextMenu(),</span>
+<span class="nc" id="L1350">				&quot;contextPopup/editNodeInContextMenu&quot;);</span>
+<span class="nc" id="L1351">		menuHolder.addAction(new RemoveNodeLocationInContextMenu(),</span>
+<span class="nc" id="L1352">				&quot;contextPopup/RemoveNodeLocationInContextMenu&quot;);</span>
+<span class="nc" id="L1353">		menuHolder.addAction(new SelectNodeInContextMenu(),</span>
+<span class="nc" id="L1354">				&quot;contextPopup/SelectNodeInContextMenu&quot;);</span>
+<span class="nc" id="L1355">		menuHolder.addAction(new SelectNodeAndCloseInContextMenu(),</span>
+<span class="nc" id="L1356">				&quot;contextPopup/SelectNodeAndCloseInContextMenu&quot;);</span>
+<span class="nc" id="L1357">		menuHolder.addSeparator(&quot;contextPopup/&quot;);</span>
+<span class="nc" id="L1358">		menuHolder.addAction(new ShowNodeMapInContextMenu(),</span>
+<span class="nc" id="L1359">				&quot;contextPopup/showNodeMapInContextMenu&quot;);</span>
+<span class="nc" id="L1360">		menuHolder.addAction(maxmimalZoomToCursorAction,</span>
+<span class="nc" id="L1361">				&quot;contextPopup/maxmimalZoomToCursorAction&quot;);</span>
+<span class="nc" id="L1362">		menuHolder.addSeparator(&quot;contextPopup/&quot;);</span>
+<span class="nc" id="L1363">		menuHolder.addAction(copyLinkToClipboardAction,</span>
+<span class="nc" id="L1364">				&quot;contextPopup/copyLinkToClipboardAction&quot;);</span>
+<span class="nc" id="L1365">		menuHolder.addAction(new AddMapPictureToNode(),</span>
+<span class="nc" id="L1366">				&quot;contextPopup/addPictureToNode&quot;);</span>
+<span class="nc" id="L1367">		menuHolder.updateMenus(getContextPopupMenu(), &quot;contextPopup/&quot;);</span>
+<span class="nc" id="L1368">		menuHolder.addAction(maxmimalZoomToCursorAction,</span>
+<span class="nc" id="L1369">				&quot;searchPopup/maxmimalZoomToCursorAction&quot;);</span>
+<span class="nc" id="L1370">		menuHolder.updateMenus(getSearchPopupMenu(), &quot;searchPopup/&quot;);</span>
+
+<span class="nc" id="L1372">		mMapDialog.addKeyListener(this);</span>
+//		Tools.addFocusPrintTimer();
+<span class="nc" id="L1374">	}</span>
+
+	public void addAccelerator(JMenuItem menuItem, String key) {
+<span class="nc" id="L1377">		String keyProp = mMindMapController.getFrame().getProperty(key);</span>
+<span class="nc" id="L1378">		KeyStroke keyStroke = KeyStroke.getKeyStroke(keyProp);</span>
+		// menuItem.setAccelerator(keyStroke);
+<span class="nc" id="L1380">		menuItem.getAction().putValue(Action.ACCELERATOR_KEY, keyStroke);</span>
+<span class="nc" id="L1381">	}</span>
+
+	/**
+	 * @param pSelected
+	 * @return
+	 */
+	protected MapNodePositionHolderBase placeNode(MindMapNode pSelected) {
+<span class="nc" id="L1388">		Coordinate cursorPosition = getMap().getCursorPosition();</span>
+<span class="nc" id="L1389">		Coordinate position = map.getPosition();</span>
+<span class="nc" id="L1390">		int zoom = map.getZoom();</span>
+<span class="nc" id="L1391">		return placeNodeAt(pSelected, cursorPosition, position, zoom);</span>
+	}
+
+	protected MapNodePositionHolderBase placeNodeAt(MindMapNode pSelected,
+			Coordinate cursorPosition, Coordinate position, int zoom) {
+<span class="nc" id="L1396">		MapNodePositionHolder hook = MapNodePositionHolder.getHook(pSelected);</span>
+<span class="nc bnc" id="L1397" title="All 2 branches missed.">		if (hook == null) {</span>
+<span class="nc" id="L1398">			hook = addHookToNode(pSelected);</span>
+		}
+<span class="nc bnc" id="L1400" title="All 2 branches missed.">		if (hook != null) {</span>
+			// set parameters:
+<span class="nc" id="L1402">			String tileSource = getTileSourceAsString();</span>
+<span class="nc" id="L1403">			hook.changePosition(cursorPosition, position, zoom, tileSource);</span>
+<span class="nc" id="L1404">		} else {</span>
+<span class="nc" id="L1405">			logger.warning(&quot;Hook not found although it was recently added. Node was &quot;</span>
+<span class="nc" id="L1406">					+ pSelected);</span>
+		}
+<span class="nc" id="L1408">		return hook;</span>
+	}
+
+	public String getTileSourceAsString() {
+<span class="nc" id="L1412">		String tileSource = getTileSourceName(getTileSource());</span>
+<span class="nc" id="L1413">		return tileSource;</span>
+	}
+
+	public TileSource getTileSource() {
+<span class="nc" id="L1417">		return getMap().getTileController().getTileSource();</span>
+	}
+
+	public void removeNodePosition(MindMapNode selected) {
+<span class="nc" id="L1421">		MapNodePositionHolderBase hook = MapNodePositionHolder</span>
+<span class="nc" id="L1422">				.getHook(selected);</span>
+<span class="nc bnc" id="L1423" title="All 2 branches missed.">		if (hook != null) {</span>
+			// double add == remove
+<span class="nc" id="L1425">			addHookToNode(selected);</span>
+		}
+<span class="nc" id="L1427">	}</span>
+
+	/**
+	 */
+	public void showSelectedNodes() {
+<span class="nc" id="L1432">		MindMapNode selected = mMindMapController.getSelected();</span>
+<span class="nc" id="L1433">		List selecteds = mMindMapController.getSelecteds();</span>
+<span class="nc bnc" id="L1434" title="All 2 branches missed.">		if (selecteds.size() == 1) {</span>
+<span class="nc" id="L1435">			MapNodePositionHolder hook = MapNodePositionHolder</span>
+<span class="nc" id="L1436">					.getHook(selected);</span>
+<span class="nc bnc" id="L1437" title="All 2 branches missed.">			if (hook != null) {</span>
+<span class="nc" id="L1438">				showNode(hook);</span>
+			}
+<span class="nc" id="L1440">			return;</span>
+		}
+		// find common center. Code adapted from JMapViewer.
+<span class="nc" id="L1443">		int x_min = Integer.MAX_VALUE;</span>
+<span class="nc" id="L1444">		int y_min = Integer.MAX_VALUE;</span>
+<span class="nc" id="L1445">		int x_max = Integer.MIN_VALUE;</span>
+<span class="nc" id="L1446">		int y_max = Integer.MIN_VALUE;</span>
+<span class="nc" id="L1447">		int mapZoomMax = getMaxZoom();</span>
+<span class="nc bnc" id="L1448" title="All 2 branches missed.">		for (Iterator it = selecteds.iterator(); it.hasNext();) {</span>
+<span class="nc" id="L1449">			MindMapNode node = (MindMapNode) it.next();</span>
+<span class="nc" id="L1450">			MapNodePositionHolder hook = MapNodePositionHolder.getHook(node);</span>
+
+<span class="nc bnc" id="L1452" title="All 2 branches missed.">			if (hook != null) {</span>
+<span class="nc" id="L1453">				int x = OsmMercator.LonToX(hook.getPosition().getLon(),</span>
+<span class="nc" id="L1454">						mapZoomMax);</span>
+<span class="nc" id="L1455">				int y = OsmMercator.LatToY(hook.getPosition().getLat(),</span>
+<span class="nc" id="L1456">						mapZoomMax);</span>
+<span class="nc" id="L1457">				x_max = Math.max(x_max, x);</span>
+<span class="nc" id="L1458">				y_max = Math.max(y_max, y);</span>
+<span class="nc" id="L1459">				x_min = Math.min(x_min, x);</span>
+<span class="nc" id="L1460">				y_min = Math.min(y_min, y);</span>
+<span class="nc bnc" id="L1461" title="All 2 branches missed.">				if (node == selected) {</span>
+<span class="nc" id="L1462">					setCursorPosition(hook.getPosition());</span>
+<span class="nc" id="L1463">					changeTileSource(hook.getTileSource(), map);</span>
+				}
+			}
+		}
+<span class="nc" id="L1467">		int height = Math.max(0, getMap().getHeight());</span>
+<span class="nc" id="L1468">		int width = Math.max(0, getMap().getWidth());</span>
+<span class="nc" id="L1469">		int newZoom = mapZoomMax;</span>
+<span class="nc" id="L1470">		int x = x_max - x_min;</span>
+<span class="nc" id="L1471">		int y = y_max - y_min;</span>
+<span class="nc bnc" id="L1472" title="All 4 branches missed.">		while (x &gt; width || y &gt; height) {</span>
+<span class="nc" id="L1473">			newZoom--;</span>
+<span class="nc" id="L1474">			x &gt;&gt;= 1;</span>
+<span class="nc" id="L1475">			y &gt;&gt;= 1;</span>
+		}
+<span class="nc" id="L1477">		x = x_min + (x_max - x_min) / 2;</span>
+<span class="nc" id="L1478">		y = y_min + (y_max - y_min) / 2;</span>
+<span class="nc" id="L1479">		int z = 1 &lt;&lt; (mapZoomMax - newZoom);</span>
+<span class="nc" id="L1480">		x /= z;</span>
+<span class="nc" id="L1481">		y /= z;</span>
+<span class="nc" id="L1482">		getMap().setDisplayPosition(x, y, newZoom);</span>
+
+<span class="nc" id="L1484">	}</span>
+
+	public int getMaxZoom() {
+<span class="nc" id="L1487">		return getTileSource().getMaxZoom();</span>
+	}
+
+	public void showNode(MapNodePositionHolder hook) {
+<span class="nc" id="L1491">		int zoom = hook.getZoom();</span>
+<span class="nc" id="L1492">		changeTileSource(hook.getTileSource(), map);</span>
+<span class="nc" id="L1493">		setCursorPosition(hook, zoom);</span>
+<span class="nc" id="L1494">	}</span>
+
+	public void setCursorPosition(MapNodePositionHolder hook, int zoom) {
+<span class="nc" id="L1497">		Coordinate position = hook.getPosition();</span>
+<span class="nc" id="L1498">		Coordinate mapCenter = hook.getMapCenter();</span>
+<span class="nc" id="L1499">		setZoom(zoom);</span>
+<span class="nc bnc" id="L1500" title="All 2 branches missed.">		if (mapCenter != null) {</span>
+			// move map:
+<span class="nc" id="L1502">			logger.fine(&quot;Set display position to &quot; + mapCenter</span>
+<span class="nc" id="L1503">					+ &quot; and cursor to &quot; + position + &quot; and zoom &quot; + zoom</span>
+<span class="nc" id="L1504">					+ &quot; where max zoom is &quot; + getMaxZoom());</span>
+<span class="nc" id="L1505">			map.setDisplayPositionByLatLon(mapCenter.getLat(),</span>
+<span class="nc" id="L1506">					mapCenter.getLon(), zoom);</span>
+		}
+<span class="nc" id="L1508">		setCursorPosition(position);</span>
+<span class="nc" id="L1509">	}</span>
+
+	/**
+	 * Sets the cursor to the specified position and moves the display, such
+	 * that the cursor is visible.
+	 */
+	protected void setCursorPosition(Coordinate position) {
+<span class="nc" id="L1516">		getMap().setCursorPosition(position);</span>
+		// is the cursor now visible and the zoom correct? if not, display it
+		// directly.
+<span class="nc bnc" id="L1519" title="All 2 branches missed.">		if (map.getMapPosition(position, true) == null) {</span>
+<span class="nc" id="L1520">			map.setDisplayPositionByLatLon(position.getLat(),</span>
+<span class="nc" id="L1521">					position.getLon(), map.getZoom());</span>
+		}
+<span class="nc" id="L1523">		storeMapPosition(position);</span>
+<span class="nc bnc" id="L1524" title="All 2 branches missed.">		for (Iterator it = mCursorPositionListeners.iterator(); it.hasNext();) {</span>
+<span class="nc" id="L1525">			CursorPositionListener listener = (CursorPositionListener) it</span>
+<span class="nc" id="L1526">					.next();</span>
+<span class="nc" id="L1527">			listener.cursorPositionChanged(position);</span>
+		}
+<span class="nc" id="L1529">	}</span>
+
+	/**
+	 * Sets the zoom.
+	 */
+	protected void setZoom(int zoom) {
+<span class="nc bnc" id="L1535" title="All 2 branches missed.">		if (zoom &gt; getMaxZoom()) {</span>
+<span class="nc" id="L1536">			zoom = getMaxZoom();</span>
+		}
+<span class="nc bnc" id="L1538" title="All 2 branches missed.">		if (zoom == 0) {</span>
+<span class="nc" id="L1539">			zoom = map.getZoom();</span>
+		}
+<span class="nc" id="L1541">		map.setZoom(zoom);</span>
+<span class="nc" id="L1542">	}</span>
+
+	/**
+	 * @param pTileSource
+	 * @param pMap
+	 *            if found, the map tile source is set. Set null, if you don't
+	 *            want this.
+	 * @return null, if the string is not found.
+	 */
+	public static TileSource changeTileSource(String pTileSource,
+			JMapViewer pMap) {
+<span class="nc" id="L1553">		logger.fine(&quot;Searching for tile source &quot; + pTileSource);</span>
+<span class="nc" id="L1554">		TileSourceStore tileSource = getTileSourceByName(pTileSource);</span>
+<span class="nc bnc" id="L1555" title="All 4 branches missed.">		if (tileSource != null &amp;&amp; pMap != null) {</span>
+<span class="nc" id="L1556">			pMap.setTileSource(tileSource.mTileSource);</span>
+<span class="nc" id="L1557">			return tileSource.mTileSource;</span>
+		}
+<span class="nc" id="L1559">		return null;</span>
+	}
+
+	public static TileSourceStore getTileSourceByName(String sourceName) {
+<span class="fc bfc" id="L1563" title="All 2 branches covered.">		for (int i = 0; i &lt; sTileSources.length; i++) {</span>
+<span class="fc" id="L1564">			TileSourceStore source = sTileSources[i];</span>
+<span class="fc" id="L1565">			if (Tools.safeEquals(getTileSourceName(source.mTileSource),</span>
+<span class="fc bfc" id="L1566" title="All 2 branches covered.">					sourceName)) {</span>
+<span class="fc" id="L1567">				logger.fine(&quot;Found  tile source &quot; + source);</span>
+<span class="fc" id="L1568">				return source;</span>
+			}
+		}
+<span class="fc" id="L1571">		return null;</span>
+	}
+
+	public static String getTileSourceName(TileSource source) {
+<span class="fc" id="L1575">		return source.getClass().getName();</span>
+	}
+
+	public MapNodePositionHolder addHookToNode(MindMapNode selected) {
+		MapNodePositionHolder hook;
+<span class="nc" id="L1580">		List selecteds = Tools.getVectorWithSingleElement(selected);</span>
+<span class="nc" id="L1581">		mMindMapController.addHook(selected, selecteds,</span>
+<span class="nc" id="L1582">				MapNodePositionHolderBase.NODE_MAP_HOOK_NAME, null);</span>
+<span class="nc" id="L1583">		hook = MapNodePositionHolder.getHook(selected);</span>
+<span class="nc" id="L1584">		return hook;</span>
+	}
+
+	/**
+	 * Translate String
+	 * 
+	 * @param pString
+	 * @return
+	 */
+	private String getText(String pString) {
+<span class="nc" id="L1594">		return mMindMapController.getText(pString);</span>
+	}
+
+	public void mouseDragged(MouseEvent e) {
+<span class="nc bnc" id="L1598" title="All 2 branches missed.">		if (!mMovementEnabled</span>
+<span class="nc bnc" id="L1599" title="All 6 branches missed.">				|| !(isMoving || isMapNodeMoving || mIsRectangularSelect))</span>
+<span class="nc" id="L1600">			return;</span>
+<span class="nc bnc" id="L1601" title="All 2 branches missed.">		if (isMapNodeMoving) {</span>
+<span class="nc" id="L1602">			lastDragPoint = e.getPoint();</span>
+<span class="nc" id="L1603">			int diffx = 0;</span>
+<span class="nc" id="L1604">			int diffy = 0;</span>
+<span class="nc bnc" id="L1605" title="All 2 branches missed.">			if (e.getX() &lt; SCROLL_MARGIN) {</span>
+<span class="nc" id="L1606">				diffx = -SCROLL_PIXEL_AMOUNT;</span>
+			}
+<span class="nc bnc" id="L1608" title="All 2 branches missed.">			if (map.getWidth() - e.getX() &lt; SCROLL_MARGIN) {</span>
+<span class="nc" id="L1609">				diffx = SCROLL_PIXEL_AMOUNT;</span>
+			}
+<span class="nc bnc" id="L1611" title="All 2 branches missed.">			if (e.getY() &lt; SCROLL_MARGIN) {</span>
+<span class="nc" id="L1612">				diffy = -SCROLL_PIXEL_AMOUNT;</span>
+			}
+<span class="nc bnc" id="L1614" title="All 2 branches missed.">			if (map.getHeight() - e.getY() &lt; SCROLL_MARGIN) {</span>
+<span class="nc" id="L1615">				diffy = SCROLL_PIXEL_AMOUNT;</span>
+			}
+<span class="nc" id="L1617">			map.moveMap(diffx, diffy);</span>
+<span class="nc" id="L1618">			return;</span>
+		}
+<span class="nc bnc" id="L1620" title="All 2 branches missed.">		if (mIsRectangularSelect) {</span>
+			// Actualize second point of rectangle.
+<span class="nc" id="L1622">			getMap().setRectangular(mRectangularStart,</span>
+<span class="nc" id="L1623">					getCoordinateFromMouseEvent(e));</span>
+<span class="nc" id="L1624">			getMap().setDrawRectangular(true);</span>
+<span class="nc" id="L1625">			getMap().repaint();</span>
+<span class="nc" id="L1626">			return;</span>
+		}
+		// Is only the selected mouse button pressed?
+<span class="nc bnc" id="L1629" title="All 2 branches missed.">		if ((e.getModifiersEx() &amp; MOUSE_BUTTONS_MASK) == movementMouseButtonMask) {</span>
+<span class="nc" id="L1630">			moveMapOnDrag(e);</span>
+		}
+<span class="nc" id="L1632">	}</span>
+
+	public void moveMapOnDrag(MouseEvent e) {
+<span class="nc" id="L1635">		Point p = e.getPoint();</span>
+<span class="nc bnc" id="L1636" title="All 2 branches missed.">		if (lastDragPoint != null) {</span>
+<span class="nc" id="L1637">			int diffx = lastDragPoint.x - p.x;</span>
+<span class="nc" id="L1638">			int diffy = lastDragPoint.y - p.y;</span>
+<span class="nc" id="L1639">			map.moveMap(diffx, diffy);</span>
+			// System.out.println(&quot;Move to &quot; + map.getPosition() +
+			// &quot; with zoom &quot; + map.getZoom() );
+		}
+<span class="nc" id="L1643">		lastDragPoint = p;</span>
+<span class="nc" id="L1644">	}</span>
+
+	public void mouseClicked(MouseEvent e) {
+<span class="nc bnc" id="L1647" title="All 2 branches missed.">		if (!mClickEnabled) {</span>
+<span class="nc" id="L1648">			return;</span>
+		}
+<span class="nc bnc" id="L1650" title="All 4 branches missed.">		if (e.getClickCount() == 2 &amp;&amp; e.getButton() == MouseEvent.BUTTON1) {</span>
+			// on double click: new node.
+<span class="nc" id="L1652">			newNode(e);</span>
+<span class="nc" id="L1653">			return;</span>
+		}
+		// is button 1?
+<span class="nc bnc" id="L1656" title="All 4 branches missed.">		if (e.getButton() == MouseEvent.BUTTON1 || Tools.isMacOsX()</span>
+<span class="nc bnc" id="L1657" title="All 2 branches missed.">				&amp;&amp; e.getModifiersEx() == MAC_MOUSE_BUTTON1_MASK) {</span>
+<span class="nc" id="L1658">			setCursorPosition(e);</span>
+		}
+<span class="nc" id="L1660">	}</span>
+
+	private void setMouseControl(boolean pEnable) {
+<span class="nc" id="L1663">		setMovementEnabled(pEnable);</span>
+<span class="nc" id="L1664">		setWheelZoomEnabled(pEnable);</span>
+<span class="nc" id="L1665">		setClickEnabled(pEnable);</span>
+<span class="nc" id="L1666">	}</span>
+
+	/**
+	 * @param pEvent
+	 *            : location
+	 */
+	private void newNode(MouseEvent pEvent) {
+<span class="nc" id="L1673">		final MindMapNode targetNode = mMindMapController.getSelected();</span>
+<span class="nc" id="L1674">		final MindMapNode newNode = insertNewNode(targetNode);</span>
+<span class="nc" id="L1675">		final NodeView nodeView = mMindMapController.getNodeView(newNode);</span>
+<span class="nc" id="L1676">		mMindMapController.select(nodeView);</span>
+		// inline editing:
+<span class="nc" id="L1678">		mMindMapController.setBlocked(true);</span>
+<span class="nc" id="L1679">		setMouseControl(false);</span>
+<span class="nc" id="L1680">		Point point = pEvent.getPoint();</span>
+<span class="nc" id="L1681">		Tools.convertPointToAncestor((Component) pEvent.getSource(), point, map);</span>
+<span class="nc" id="L1682">		storeMapPosition(getMap().getCursorPosition());</span>
+<span class="nc" id="L1683">		MapEditTextFieldControl editControl = new MapEditTextFieldControl(</span>
+<span class="nc" id="L1684">				nodeView, newNode, targetNode, false);</span>
+<span class="nc" id="L1685">		EditNodeTextField textfield = new MapEditNoteTextField(nodeView, &quot;&quot;,</span>
+<span class="nc" id="L1686">				null, mMindMapController, editControl, map, point);</span>
+<span class="nc" id="L1687">		textfield.show();</span>
+<span class="nc" id="L1688">	}</span>
+
+	public MindMapNode insertNewNode(final MindMapNode targetNode) {
+		int childPosition;
+		MindMapNode parent;
+<span class="nc bnc" id="L1693" title="All 2 branches missed.">		if (targetNode.isRoot()) {</span>
+<span class="nc" id="L1694">			parent = targetNode;</span>
+<span class="nc" id="L1695">			childPosition = 0;</span>
+<span class="nc" id="L1696">		} else {</span>
+			// new sibling:
+<span class="nc" id="L1698">			parent = targetNode.getParentNode();</span>
+<span class="nc" id="L1699">			childPosition = parent.getChildPosition(targetNode);</span>
+<span class="nc" id="L1700">			childPosition++;</span>
+		}
+<span class="nc" id="L1702">		final MindMapNode newNode = mMindMapController.addNewNode(parent,</span>
+<span class="nc" id="L1703">				childPosition, targetNode.isLeft());</span>
+<span class="nc" id="L1704">		return newNode;</span>
+	}
+
+	/**
+	 * @param pPositionHolder
+	 * @param pEvent
+	 *            : location
+	 */
+	private void editNode(MapNodePositionHolder pPositionHolder,
+			MouseEvent pEvent) {
+<span class="nc" id="L1714">		final MindMapNode editNode = pPositionHolder.getNode();</span>
+<span class="nc" id="L1715">		final NodeView nodeView = mMindMapController.getNodeView(editNode);</span>
+<span class="nc bnc" id="L1716" title="All 2 branches missed.">		if (nodeView == null) {</span>
+<span class="nc" id="L1717">			return;</span>
+		}
+<span class="nc" id="L1719">		mMindMapController.select(nodeView);</span>
+		// inline editing:
+<span class="nc" id="L1721">		mMindMapController.setBlocked(true);</span>
+<span class="nc" id="L1722">		setMouseControl(false);</span>
+<span class="nc" id="L1723">		Point point = pEvent.getPoint();</span>
+<span class="nc" id="L1724">		Tools.convertPointToAncestor((Component) pEvent.getSource(), point, map);</span>
+<span class="nc" id="L1725">		MapEditTextFieldControl editControl = new MapEditTextFieldControl(</span>
+<span class="nc" id="L1726">				nodeView, editNode, editNode, true);</span>
+<span class="nc" id="L1727">		EditNodeTextField textfield = new MapEditNoteTextField(nodeView,</span>
+<span class="nc" id="L1728">				editNode.getText(), null, mMindMapController, editControl, map,</span>
+<span class="nc" id="L1729">				point);</span>
+<span class="nc" id="L1730">		textfield.show();</span>
+<span class="nc" id="L1731">	}</span>
+
+	public void setCursorPosition(MouseEvent e) {
+<span class="nc" id="L1734">		final Coordinate coordinates = map.getPosition(e.getPoint());</span>
+<span class="nc" id="L1735">		setCursorPosition(coordinates);</span>
+<span class="nc" id="L1736">	}</span>
+
+	public void mousePressed(MouseEvent e) {
+<span class="nc bnc" id="L1739" title="All 2 branches missed.">		if (!mClickEnabled) {</span>
+<span class="nc" id="L1740">			return;</span>
+		}
+<span class="nc" id="L1742">		showPopupMenu(e);</span>
+<span class="nc bnc" id="L1743" title="All 2 branches missed.">		if (e.isConsumed()) {</span>
+<span class="nc" id="L1744">			return;</span>
+		}
+<span class="nc bnc" id="L1746" title="All 2 branches missed.">		if (e.getButton() == movementMouseButton</span>
+<span class="nc bnc" id="L1747" title="All 4 branches missed.">				|| (Tools.isMacOsX() &amp;&amp; e.getModifiersEx() == MAC_MOUSE_BUTTON1_MASK)) {</span>
+<span class="nc bnc" id="L1748" title="All 2 branches missed.">			if (e.isShiftDown()) {</span>
+				// rectangular select:
+<span class="nc" id="L1750">				mIsRectangularSelect = true;</span>
+<span class="nc" id="L1751">				mRectangularStart = getCoordinateFromMouseEvent(e);</span>
+<span class="nc" id="L1752">				logger.fine(&quot;Starting rect on &quot; + mRectangularStart);</span>
+<span class="nc" id="L1753">				return;</span>
+			}
+			// detect collision with map marker:
+<span class="nc" id="L1756">			MapMarkerBase mapMarker = checkHit(e);</span>
+<span class="nc bnc" id="L1757" title="All 2 branches missed.">			if (mapMarker instanceof MapMarkerLocation) {</span>
+<span class="nc" id="L1758">				MapNodePositionHolder posHolder = ((MapMarkerLocation) mapMarker)</span>
+<span class="nc" id="L1759">						.getNodePositionHolder();</span>
+<span class="nc" id="L1760">				mDragStartingPoint = new Point(e.getPoint());</span>
+<span class="nc" id="L1761">				correctPointByMapCenter(mDragStartingPoint);</span>
+<span class="nc" id="L1762">				isMapNodeMoving = true;</span>
+<span class="nc" id="L1763">				mMapNodeMovingSource = posHolder;</span>
+<span class="nc" id="L1764">				setCursor(Cursor.MOVE_CURSOR, true);</span>
+<span class="nc" id="L1765">				return;</span>
+			}
+<span class="nc" id="L1767">			lastDragPoint = null;</span>
+<span class="nc" id="L1768">			isMoving = true;</span>
+		}
+<span class="nc" id="L1770">	}</span>
+
+	protected void correctPointByMapCenter(Point dragStartingPoint) {
+<span class="nc" id="L1773">		Point center = getMap().getCenter();</span>
+<span class="nc" id="L1774">		dragStartingPoint.translate(center.x, center.y);</span>
+<span class="nc" id="L1775">	}</span>
+
+	public MapMarkerBase checkHit(MouseEvent e) {
+		// check for hit on map marker:
+<span class="nc bnc" id="L1779" title="All 2 branches missed.">		for (Iterator it = map.getMapMarkerList().iterator(); it.hasNext();) {</span>
+<span class="nc" id="L1780">			MapMarkerBase location = (MapMarkerBase) it.next();</span>
+<span class="nc" id="L1781">			Coordinate locationC = location.getCoordinate();</span>
+<span class="nc" id="L1782">			Point locationXY = map.getMapPosition(locationC, true);</span>
+<span class="nc bnc" id="L1783" title="All 2 branches missed.">			if (locationXY == null) {</span>
+<span class="nc" id="L1784">				continue;</span>
+			}
+<span class="nc" id="L1786">			boolean checkHitResult = location.checkHit(e.getX() - locationXY.x,</span>
+<span class="nc" id="L1787">					e.getY() - locationXY.y);</span>
+<span class="nc" id="L1788">			logger.fine(&quot;Checking for hit for location &quot; + location</span>
+<span class="nc" id="L1789">					+ &quot; at location &quot; + locationXY + &quot; to event &quot; + e.getX()</span>
+<span class="nc" id="L1790">					+ &quot; and &quot; + e.getY() + &quot; is &quot; + checkHitResult);</span>
+<span class="nc bnc" id="L1791" title="All 2 branches missed.">			if (checkHitResult) {</span>
+<span class="nc" id="L1792">				return location;</span>
+			}
+		}
+<span class="nc" id="L1795">		return null;</span>
+
+	}
+
+	public Coordinate getCoordinateFromMouseEvent(MouseEvent e) {
+<span class="nc" id="L1800">		Coordinate mousePosition = map</span>
+<span class="nc" id="L1801">				.getPosition(new Point(e.getX(), e.getY()));</span>
+<span class="nc" id="L1802">		return mousePosition;</span>
+	}
+
+	/**
+	 * @param e
+	 *            event.
+	 */
+	private void showPopupMenu(MouseEvent e) {
+<span class="nc bnc" id="L1810" title="All 2 branches missed.">		if (e.isPopupTrigger()) {</span>
+<span class="nc" id="L1811">			JPopupMenu popupmenu = getPopupMenu();</span>
+			// check for hit on map marker:
+<span class="nc" id="L1813">			MapMarkerBase mapMarker = checkHit(e);</span>
+<span class="nc bnc" id="L1814" title="All 2 branches missed.">			if (mapMarker instanceof MapMarkerLocation) {</span>
+<span class="nc" id="L1815">				MapNodePositionHolder posHolder = ((MapMarkerLocation) mapMarker)</span>
+<span class="nc" id="L1816">						.getNodePositionHolder();</span>
+<span class="nc" id="L1817">				mCurrentPopupPositionHolder = posHolder;</span>
+<span class="nc" id="L1818">				setCursorPosition(posHolder.getPosition());</span>
+<span class="nc" id="L1819">				getContextPopupMenu()</span>
+<span class="nc" id="L1820">						.show(e.getComponent(), e.getX(), e.getY());</span>
+<span class="nc" id="L1821">				e.consume();</span>
+<span class="nc" id="L1822">				return;</span>
+			}
+<span class="nc bnc" id="L1824" title="All 2 branches missed.">			if (mapMarker instanceof MapSearchMarkerLocation) {</span>
+<span class="nc" id="L1825">				MapSearchMarkerLocation location = (MapSearchMarkerLocation) mapMarker;</span>
+<span class="nc" id="L1826">				setCursorPosition(location.getCoordinate());</span>
+<span class="nc" id="L1827">				getSearchPopupMenu().show(e.getComponent(), e.getX(), e.getY());</span>
+<span class="nc" id="L1828">				e.consume();</span>
+<span class="nc" id="L1829">				return;</span>
+
+			}
+<span class="nc" id="L1832">			mCurrentPopupPositionHolder = null;</span>
+<span class="nc bnc" id="L1833" title="All 2 branches missed.">			if (popupmenu != null) {</span>
+<span class="nc" id="L1834">				setCursorPosition(e);</span>
+<span class="nc" id="L1835">				popupmenu.show(e.getComponent(), e.getX(), e.getY());</span>
+<span class="nc" id="L1836">				e.consume();</span>
+			}
+		}
+
+<span class="nc" id="L1840">	}</span>
+
+	/**
+	 * listener, that blocks the controler if the menu is active (PN) Take care!
+	 * This listener is also used for modelpopups (as for graphical links).
+	 */
+<span class="nc" id="L1846">	private class ControllerPopupMenuListener implements PopupMenuListener {</span>
+		public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+<span class="nc" id="L1848">			setMouseControl(false); // block controller</span>
+<span class="nc" id="L1849">		}</span>
+
+		public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+<span class="nc" id="L1852">			setMouseControl(true); // unblock controller</span>
+<span class="nc" id="L1853">		}</span>
+
+		public void popupMenuCanceled(PopupMenuEvent e) {
+<span class="nc" id="L1856">			setMouseControl(true); // unblock controller</span>
+<span class="nc" id="L1857">		}</span>
+
+	}
+
+	/**
+	 * Take care! This listener is also used for modelpopups (as for graphical
+	 * links).
+	 */
+<span class="nc" id="L1865">	protected final ControllerPopupMenuListener popupListenerSingleton = new ControllerPopupMenuListener();</span>
+
+	private MouseEvent mTimerMouseEvent;
+
+	private Action mZoomInAction;
+
+	private Action mZoomOutAction;
+
+	private MoveForwardAction mMoveForwardAction;
+
+	private MoveBackwardAction mMoveBackwardAction;
+
+	JMenuBar mMenuBar;
+
+<span class="nc" id="L1879">	private long mWheelZoomLastTime = 0;</span>
+
+<span class="nc" id="L1881">	private Vector mCursorPositionListeners = new Vector();</span>
+
+	private JPopupMenu mSearchPopupMenu;
+
+	public void mouseReleased(MouseEvent e) {
+<span class="nc bnc" id="L1886" title="All 2 branches missed.">		if (!mClickEnabled) {</span>
+<span class="nc" id="L1887">			return;</span>
+		}
+<span class="nc" id="L1889">		showPopupMenu(e);</span>
+<span class="nc bnc" id="L1890" title="All 2 branches missed.">		if (e.isConsumed()) {</span>
+<span class="nc" id="L1891">			return;</span>
+		}
+
+<span class="nc bnc" id="L1894" title="All 4 branches missed.">		if (e.getButton() == movementMouseButton || Tools.isMacOsX()</span>
+<span class="nc bnc" id="L1895" title="All 2 branches missed.">				&amp;&amp; e.getButton() == MouseEvent.BUTTON1) {</span>
+<span class="nc" id="L1896">			final Coordinate coordinates = getCoordinateFromMouseEvent(e);</span>
+<span class="nc bnc" id="L1897" title="All 2 branches missed.">			if (isMapNodeMoving) {</span>
+				// check for minimal drag distance:
+<span class="nc" id="L1899">				Point currentPoint = new Point(e.getPoint());</span>
+<span class="nc" id="L1900">				correctPointByMapCenter(currentPoint);</span>
+<span class="nc bnc" id="L1901" title="All 2 branches missed.">				if (mDragStartingPoint.distance(currentPoint) &gt; MapMarkerLocation.CIRCLE_RADIUS) {</span>
+<span class="nc" id="L1902">					Coordinate mousePosition = coordinates;</span>
+<span class="nc" id="L1903">					mMapNodeMovingSource.changePosition(mousePosition,</span>
+<span class="nc" id="L1904">							map.getPosition(), map.getZoom(),</span>
+<span class="nc" id="L1905">							getTileSourceAsString());</span>
+<span class="nc" id="L1906">				} else {</span>
+					// select the node (single click)
+<span class="nc" id="L1908">					MindMapNode node = mMapNodeMovingSource.getNode();</span>
+<span class="nc bnc" id="L1909" title="All 2 branches missed.">					if (e.isShiftDown()) {</span>
+<span class="nc" id="L1910">						Vector sel = new Vector(</span>
+<span class="nc" id="L1911">								mMindMapController.getSelecteds());</span>
+<span class="nc bnc" id="L1912" title="All 2 branches missed.">						if (sel.contains(node)) {</span>
+							// remove:
+<span class="nc" id="L1914">							sel.remove(node);</span>
+<span class="nc" id="L1915">							node = mMindMapController.getSelected();</span>
+<span class="nc" id="L1916">						} else {</span>
+<span class="nc" id="L1917">							sel.add(node);</span>
+						}
+<span class="nc" id="L1919">						mMindMapController.select(node, sel);</span>
+<span class="nc" id="L1920">					} else {</span>
+<span class="nc" id="L1921">						selectNode(node);</span>
+					}
+				}
+<span class="nc" id="L1924">				mMapNodeMovingSource = null;</span>
+<span class="nc" id="L1925">				setCursor(Cursor.DEFAULT_CURSOR, false);</span>
+			}
+<span class="nc bnc" id="L1927" title="All 2 branches missed.">			if (mIsRectangularSelect) {</span>
+				// gather all locations and select them:
+<span class="nc" id="L1929">				Vector mapNodePositionHolders = new Vector();</span>
+				// take only those elements in the correct rectangle:
+<span class="nc" id="L1931">				Rectangle r = getMap().getRectangle(mRectangularStart,</span>
+<span class="nc" id="L1932">						coordinates);</span>
+<span class="nc bnc" id="L1933" title="All 2 branches missed.">				if (r != null) {</span>
+<span class="nc" id="L1934">					MindMapNode last = null;</span>
+<span class="nc" id="L1935">					for (Iterator it = mMapHook.getMapNodePositionHolders()</span>
+<span class="nc bnc" id="L1936" title="All 2 branches missed.">							.iterator(); it.hasNext();) {</span>
+<span class="nc" id="L1937">						MapNodePositionHolder holder = (MapNodePositionHolder) it</span>
+<span class="nc" id="L1938">								.next();</span>
+<span class="nc" id="L1939">						Coordinate pointPosition = holder.getPosition();</span>
+<span class="nc" id="L1940">						Point mapPosition = getMap().getMapPosition(</span>
+<span class="nc" id="L1941">								pointPosition, true);</span>
+<span class="nc bnc" id="L1942" title="All 4 branches missed.">						if (mapPosition != null &amp;&amp; r.contains(mapPosition)) {</span>
+							// ok
+<span class="nc" id="L1944">							mapNodePositionHolders.add(holder.getNode());</span>
+<span class="nc" id="L1945">							last = holder.getNode();</span>
+						}
+					}
+<span class="nc bnc" id="L1948" title="All 2 branches missed.">					if (last != null) {</span>
+						// ie. at least one found:
+<span class="nc" id="L1950">						mMindMapController.select(last, mapNodePositionHolders);</span>
+					}
+				}
+			}
+<span class="nc" id="L1954">			getMap().setDrawRectangular(false);</span>
+<span class="nc" id="L1955">			mIsRectangularSelect = false;</span>
+<span class="nc" id="L1956">			mRectangularStart = null;</span>
+<span class="nc" id="L1957">			isMapNodeMoving = false;</span>
+<span class="nc bnc" id="L1958" title="All 2 branches missed.">			if (lastDragPoint != null) {</span>
+<span class="nc" id="L1959">				storeMapPosition(coordinates);</span>
+			}
+<span class="nc" id="L1961">			lastDragPoint = null;</span>
+<span class="nc" id="L1962">			isMoving = false;</span>
+		}
+<span class="nc" id="L1964">	}</span>
+
+	protected void storeMapPosition(final Coordinate coordinates) {
+<span class="nc" id="L1967">		final PositionHolder holder = new PositionHolder(coordinates.getLat(),</span>
+<span class="nc" id="L1968">				coordinates.getLon(), getMap().getZoom());</span>
+<span class="nc" id="L1969">		final Vector positionHolderVector = getPositionHolderVector();</span>
+<span class="nc bnc" id="L1970" title="All 2 branches missed.">		if (getPositionHolderIndex() &gt;= 0) {</span>
+			// check for equalness
+<span class="nc" id="L1972">			PositionHolder currentPosition = (PositionHolder) positionHolderVector</span>
+<span class="nc" id="L1973">					.get(getPositionHolderIndex());</span>
+<span class="nc bnc" id="L1974" title="All 2 branches missed.">			if (currentPosition.equals(holder)) {</span>
+<span class="nc" id="L1975">				return;</span>
+			}
+		}
+		// if position is not at the end, the locations in front are deleted.
+<span class="nc bnc" id="L1979" title="All 2 branches missed.">		while (getPositionHolderIndex() &lt; positionHolderVector.size() - 1) {</span>
+<span class="nc" id="L1980">			positionHolderVector.remove(positionHolderVector.size() - 1);</span>
+		}
+<span class="nc" id="L1982">		logger.fine(&quot;Storing position &quot; + holder + &quot; at index &quot;</span>
+<span class="nc" id="L1983">				+ getPositionHolderIndex());</span>
+<span class="nc" id="L1984">		positionHolderVector.insertElementAt(holder,</span>
+<span class="nc" id="L1985">				getPositionHolderIndex() + 1);</span>
+<span class="nc" id="L1986">		setPositionHolderIndex(getPositionHolderIndex() + 1);</span>
+		// assure that max size is below limit.
+<span class="nc bnc" id="L1988" title="All 4 branches missed.">		while (positionHolderVector.size() &gt;= POSITION_HOLDER_LIMIT</span>
+<span class="nc" id="L1989">				&amp;&amp; getPositionHolderIndex() &gt; 0) {</span>
+<span class="nc" id="L1990">			setPositionHolderIndex(Math.max(getPositionHolderIndex() - 1, 0));</span>
+<span class="nc" id="L1991">			positionHolderVector.remove(0);</span>
+		}
+		// update actions
+<span class="nc" id="L1994">		mMoveForwardAction.setEnabled(mMoveForwardAction.isEnabled());</span>
+<span class="nc" id="L1995">		mMoveBackwardAction.setEnabled(mMoveBackwardAction.isEnabled());</span>
+<span class="nc" id="L1996">	}</span>
+
+	protected void setCursor(int defaultCursor, boolean pVisible) {
+<span class="nc" id="L1999">		Component glassPane = getGlassPane();</span>
+<span class="nc" id="L2000">		glassPane.setCursor(Cursor.getPredefinedCursor(defaultCursor));</span>
+<span class="nc" id="L2001">		glassPane.setVisible(pVisible);</span>
+<span class="nc" id="L2002">	}</span>
+
+	public Component getGlassPane() {
+<span class="nc" id="L2005">		return map.getRootPane().getGlassPane();</span>
+	}
+
+	public void mouseWheelMoved(MouseWheelEvent e) {
+<span class="nc bnc" id="L2009" title="All 2 branches missed.">		if (mWheelZoomEnabled) {</span>
+			/*
+			 * This is problematic under Mac as the zoom is too fast. First
+			 * idea: looking for the last time the zoom was changed. It must not
+			 * be changed within 100ms again. Moreover, limit the rotation
+			 * number.
+			 */
+<span class="nc bnc" id="L2016" title="All 2 branches missed.">			if (System.currentTimeMillis() - mWheelZoomLastTime &gt;= WHEEL_ZOOM_MINIMAL_TIME_BETWEEN_CHANGES) {</span>
+<span class="nc" id="L2017">				int wheelRotation = e.getWheelRotation();</span>
+<span class="nc bnc" id="L2018" title="All 2 branches missed.">				if (Math.abs(wheelRotation) &gt; 2) {</span>
+<span class="nc" id="L2019">					wheelRotation = (int) (2 * Math.signum(wheelRotation));</span>
+				}
+<span class="nc" id="L2021">				map.setZoom(map.getZoom() - wheelRotation, e.getPoint());</span>
+<span class="nc" id="L2022">				mWheelZoomLastTime = System.currentTimeMillis();</span>
+			}
+		}
+<span class="nc" id="L2025">	}</span>
+
+	public boolean isMovementEnabled() {
+<span class="nc" id="L2028">		return mMovementEnabled;</span>
+	}
+
+	/**
+	 * Enables or disables that the map pane can be moved using the mouse.
+	 * 
+	 * @param movementEnabled
+	 */
+	public void setMovementEnabled(boolean movementEnabled) {
+<span class="nc" id="L2037">		this.mMovementEnabled = movementEnabled;</span>
+<span class="nc" id="L2038">	}</span>
+
+	public int getMovementMouseButton() {
+<span class="nc" id="L2041">		return movementMouseButton;</span>
+	}
+
+	public JPopupMenu getPopupMenu() {
+<span class="nc" id="L2045">		return mPopupMenu;</span>
+	}
+
+	public JPopupMenu getContextPopupMenu() {
+<span class="nc bnc" id="L2049" title="All 2 branches missed.">		if (mContextPopupMenu == null) {</span>
+<span class="nc" id="L2050">			mContextPopupMenu = new JPopupMenu();</span>
+<span class="nc" id="L2051">			mContextPopupMenu.addPopupMenuListener(popupListenerSingleton);</span>
+		}
+<span class="nc" id="L2053">		return mContextPopupMenu;</span>
+	}
+
+	public JPopupMenu getSearchPopupMenu() {
+<span class="nc bnc" id="L2057" title="All 2 branches missed.">		if (mSearchPopupMenu == null) {</span>
+<span class="nc" id="L2058">			mSearchPopupMenu = new JPopupMenu();</span>
+<span class="nc" id="L2059">			mSearchPopupMenu.addPopupMenuListener(popupListenerSingleton);</span>
+		}
+<span class="nc" id="L2061">		return mSearchPopupMenu;</span>
+	}
+
+	/**
+	 * Sets the mouse button that is used for moving the map. Possible values
+	 * are:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;{@link MouseEvent#BUTTON1} (left mouse button)&lt;/li&gt;
+	 * &lt;li&gt;{@link MouseEvent#BUTTON2} (middle mouse button)&lt;/li&gt;
+	 * &lt;li&gt;{@link MouseEvent#BUTTON3} (right mouse button)&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * @param movementMouseButton
+	 */
+	public void setMovementMouseButton(int movementMouseButton) {
+<span class="nc" id="L2076">		this.movementMouseButton = movementMouseButton;</span>
+<span class="nc bnc" id="L2077" title="All 4 branches missed.">		switch (movementMouseButton) {</span>
+		case MouseEvent.BUTTON1:
+<span class="nc" id="L2079">			movementMouseButtonMask = MouseEvent.BUTTON1_DOWN_MASK;</span>
+<span class="nc" id="L2080">			break;</span>
+		case MouseEvent.BUTTON2:
+<span class="nc" id="L2082">			movementMouseButtonMask = MouseEvent.BUTTON2_DOWN_MASK;</span>
+<span class="nc" id="L2083">			break;</span>
+		case MouseEvent.BUTTON3:
+<span class="nc" id="L2085">			movementMouseButtonMask = MouseEvent.BUTTON3_DOWN_MASK;</span>
+<span class="nc" id="L2086">			break;</span>
+		default:
+<span class="nc" id="L2088">			throw new RuntimeException(&quot;Unsupported button&quot;);</span>
+		}
+<span class="nc" id="L2090">	}</span>
+
+	public boolean isWheelZoomEnabled() {
+<span class="nc" id="L2093">		return mWheelZoomEnabled;</span>
+	}
+
+	public void setWheelZoomEnabled(boolean wheelZoomEnabled) {
+<span class="nc" id="L2097">		this.mWheelZoomEnabled = wheelZoomEnabled;</span>
+<span class="nc" id="L2098">	}</span>
+
+	public void mouseEntered(MouseEvent e) {
+<span class="nc" id="L2101">	}</span>
+
+	public void mouseExited(MouseEvent e) {
+<span class="nc" id="L2104">	}</span>
+
+	public void mouseMoved(MouseEvent e) {
+<span class="nc bnc" id="L2107" title="All 2 branches missed.">		if (!mMovementEnabled) {</span>
+<span class="nc" id="L2108">			return;</span>
+		}
+		// Mac OSX simulates with ctrl + mouse 1 the second mouse button hence
+		// no dragging events get fired.
+		//
+<span class="nc bnc" id="L2113" title="All 2 branches missed.">		if (Tools.isMacOsX()) {</span>
+<span class="nc bnc" id="L2114" title="All 2 branches missed.">			if (isMapNodeMoving) {</span>
+<span class="nc" id="L2115">				lastDragPoint = e.getPoint();</span>
+<span class="nc" id="L2116">				return;</span>
+			}
+			// Is only the selected mouse button pressed?
+<span class="nc bnc" id="L2119" title="All 4 branches missed.">			if (isMoving &amp;&amp; e.getModifiersEx() == 0 /* MouseEvent.CTRL_DOWN_MASK */) {</span>
+<span class="nc" id="L2120">				moveMapOnDrag(e);</span>
+<span class="nc" id="L2121">				return;</span>
+			}
+
+		}
+		// no move events, thus the cursor is just moving.
+<span class="nc" id="L2126">		mMouseHitsNodeTimer.restart();</span>
+<span class="nc" id="L2127">		mTimerMouseEvent = e;</span>
+
+<span class="nc" id="L2129">	}</span>
+
+	/**
+	 * Action handler for search result handling.
+	 * 
+	 * @param pPlace
+	 */
+	public void setCursorPosition(Place pPlace) {
+<span class="nc" id="L2137">		map.setDisplayPositionByLatLon(pPlace.getLat(), pPlace.getLon(),</span>
+<span class="nc" id="L2138">				map.getZoom());</span>
+<span class="nc" id="L2139">		Coordinate cursorPosition = new Coordinate(pPlace.getLat(),</span>
+<span class="nc" id="L2140">				pPlace.getLon());</span>
+<span class="nc" id="L2141">		setCursorPosition(cursorPosition);</span>
+<span class="nc" id="L2142">	}</span>
+
+	/**
+	 * @return true, if ok, false if error.
+	 */
+	public boolean search(MapDialog.ResultTableModel dataModel,
+			JTable mResultTable, String mSearchText,
+			Color mTableOriginalBackgroundColor) {
+		// Display hour glass
+<span class="nc" id="L2151">		boolean returnValue = true;</span>
+<span class="nc" id="L2152">		setCursor(Cursor.WAIT_CURSOR, true);</span>
+		try {
+<span class="nc" id="L2154">			dataModel.clear();</span>
+			// doesn't work due to event thread...
+<span class="nc" id="L2156">			mResultTable.setBackground(Color.GRAY);</span>
+<span class="nc" id="L2157">			Searchresults results = getSearchResults(mSearchText);</span>
+<span class="nc bnc" id="L2158" title="All 2 branches missed.">			if (results == null) {</span>
+<span class="nc" id="L2159">				mResultTable.setBackground(Color.RED);</span>
+<span class="nc" id="L2160">			} else {</span>
+<span class="nc" id="L2161">				for (Iterator it = results.getListPlaceList().iterator(); it</span>
+<span class="nc bnc" id="L2162" title="All 2 branches missed.">						.hasNext();) {</span>
+<span class="nc" id="L2163">					Place place = (Place) it.next();</span>
+<span class="nc" id="L2164">					logger.fine(&quot;Found place &quot; + place.getDisplayName());</span>
+					// error handling, if the query wasn't successful.
+<span class="nc bnc" id="L2166" title="All 2 branches missed.">					if (Tools.safeEquals(&quot;ERROR&quot;, place.getOsmType())) {</span>
+<span class="nc" id="L2167">						mResultTable.setBackground(Color.RED);</span>
+<span class="nc" id="L2168">						returnValue = false;</span>
+<span class="nc bnc" id="L2169" title="All 2 branches missed.">					} else if (Tools.safeEquals(&quot;WARNING&quot;, place.getOsmType())) {</span>
+<span class="nc" id="L2170">						mResultTable.setBackground(Color.YELLOW);</span>
+<span class="nc" id="L2171">						returnValue = false;</span>
+<span class="nc" id="L2172">					} else {</span>
+<span class="nc" id="L2173">						mResultTable.setBackground(Color.WHITE);</span>
+<span class="nc" id="L2174">						mResultTable</span>
+<span class="nc" id="L2175">								.setBackground(mTableOriginalBackgroundColor);</span>
+					}
+<span class="nc" id="L2177">					dataModel.addPlace(place);</span>
+				}
+			}
+<span class="nc" id="L2180">		} catch (Exception e) {</span>
+<span class="nc" id="L2181">			freemind.main.Resources.getInstance().logException(e);</span>
+<span class="nc" id="L2182">			returnValue = false;</span>
+		}
+<span class="nc" id="L2184">		setCursor(Cursor.DEFAULT_CURSOR, false);</span>
+<span class="nc" id="L2185">		return returnValue;</span>
+	}
+
+	public Reversegeocode getReverseLookup(Coordinate pCoordinate, int pZoom) {
+<span class="nc" id="L2189">		StringBuilder b = new StringBuilder();</span>
+<span class="nc" id="L2190">		b.append(&quot;http://nominatim.openstreetmap.org/reverse?format=xml&amp;email=christianfoltin%40users.sourceforge.net&amp;addressdetails=0&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L2191">		b.append(&quot;&amp;accept-language=&quot;).append(Locale.getDefault().getLanguage()); //$NON-NLS-1$</span>
+<span class="nc" id="L2192">		b.append(&quot;&amp;lat=&quot;);</span>
+<span class="nc" id="L2193">		b.append(pCoordinate.getLat());</span>
+<span class="nc" id="L2194">		b.append(&quot;&amp;lon=&quot;);</span>
+<span class="nc" id="L2195">		b.append(pCoordinate.getLon());</span>
+<span class="nc" id="L2196">		b.append(&quot;&amp;zoom=&quot;);</span>
+<span class="nc" id="L2197">		b.append(pZoom);</span>
+		try {
+<span class="nc" id="L2199">			String result = wget(b);</span>
+<span class="nc" id="L2200">			Reversegeocode reversegeocode = (Reversegeocode) XmlBindingTools</span>
+<span class="nc" id="L2201">					.getInstance().unMarshall(result);</span>
+<span class="nc" id="L2202">			return reversegeocode;</span>
+<span class="nc" id="L2203">		} catch (Exception e) {</span>
+<span class="nc" id="L2204">			freemind.main.Resources.getInstance().logException(e);</span>
+		}
+<span class="nc" id="L2206">		return null;</span>
+	}
+
+	/**
+	 * @param pText
+	 * @return
+	 */
+	public Searchresults getSearchResults(String pText) {
+<span class="nc" id="L2214">		String result = &quot;unknown&quot;;</span>
+<span class="nc" id="L2215">		Searchresults results = new Searchresults();</span>
+<span class="nc" id="L2216">		StringBuilder b = new StringBuilder();</span>
+<span class="nc" id="L2217">		boolean limitSearchToRegion = mMapHook.isLimitSearchToRegion();</span>
+		try {
+			if (true) {
+<span class="nc" id="L2220">				b.append(&quot;http://nominatim.openstreetmap.org/search/?email=christianfoltin%40users.sourceforge.net&amp;q=&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L2221">				b.append(URLEncoder.encode(pText, &quot;UTF-8&quot;));</span>
+<span class="nc" id="L2222">				b.append(&quot;&amp;format=xml&amp;limit=30&amp;accept-language=&quot;).append(Locale.getDefault().getLanguage()); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L2223" title="All 2 branches missed.">				if (limitSearchToRegion) {</span>
+<span class="nc" id="L2224">					Coordinate topLeftCorner = getMap().getPosition(0, 0);</span>
+<span class="nc" id="L2225">					Coordinate bottomRightCorner = getMap().getPosition(</span>
+<span class="nc" id="L2226">							getMap().getWidth(), getMap().getHeight());</span>
+<span class="nc" id="L2227">					b.append(&quot;&amp;viewbox=&quot;);</span>
+<span class="nc" id="L2228">					b.append(topLeftCorner.getLon());</span>
+<span class="nc" id="L2229">					b.append(&quot;,&quot;);</span>
+<span class="nc" id="L2230">					b.append(topLeftCorner.getLat());</span>
+<span class="nc" id="L2231">					b.append(&quot;,&quot;);</span>
+<span class="nc" id="L2232">					b.append(bottomRightCorner.getLon());</span>
+<span class="nc" id="L2233">					b.append(&quot;,&quot;);</span>
+<span class="nc" id="L2234">					b.append(bottomRightCorner.getLat());</span>
+<span class="nc" id="L2235">					b.append(&quot;&amp;bounded=1&quot;);</span>
+				}
+<span class="nc" id="L2237">				result = wget(b);</span>
+			} else {
+				// only for offline testing:
+				result = XML_VERSION_1_0_ENCODING_UTF_8
+						+ &quot;&lt;searchresults timestamp=\&quot;Tue, 08 Nov 11 22:49:54 -0500\&quot; attribution=\&quot;Data Copyright OpenStreetMap Contributors, Some Rights Reserved. CC-BY-SA 2.0.\&quot; querystring=\&quot;innsbruck\&quot; polygon=\&quot;false\&quot; exclude_place_ids=\&quot;228452,25664166,26135863,25440203\&quot; more_url=\&quot;http://open.mapquestapi.com/nominatim/v1/search?format=xml&amp;amp;exclude_place_ids=228452,25664166,26135863,25440203&amp;amp;accept-language=&amp;amp;q=innsbruck\&quot;&gt;\n&quot;
+						+ &quot;  &lt;place place_id=\&quot;228452\&quot; osm_type=\&quot;node\&quot; osm_id=\&quot;34840064\&quot; place_rank=\&quot;16\&quot; boundingbox=\&quot;47.2554266357,47.2754304504,11.3827679062,11.4027688599\&quot; lat=\&quot;47.2654296\&quot; lon=\&quot;11.3927685\&quot; display_name=\&quot;Innsbruck, Bezirk Innsbruck-Stadt, Innsbruck-Stadt, Tirol, Österreich, Europe\&quot; class=\&quot;place\&quot; type=\&quot;city\&quot; icon=\&quot;http://open.mapquestapi.com/nominatim/v1/images/mapicons/poi_place_city.p.20.png\&quot;/&gt;\n&quot;
+						+ &quot;  &lt;place place_id=\&quot;25664166\&quot; osm_type=\&quot;way\&quot; osm_id=\&quot;18869490\&quot; place_rank=\&quot;27\&quot; boundingbox=\&quot;43.5348739624023,43.5354156494141,-71.1319198608398,-71.1316146850586\&quot; lat=\&quot;43.5351336524196\&quot; lon=\&quot;-71.1317853486877\&quot; display_name=\&quot;Innsbruck, New Durham, Strafford County, New Hampshire, United States of America\&quot; class=\&quot;highway\&quot; type=\&quot;service\&quot;/&gt;\n&quot;
+						+ &quot;  &lt;place place_id=\&quot;26135863\&quot; osm_type=\&quot;way\&quot; osm_id=\&quot;18777572\&quot; place_rank=\&quot;27\&quot; boundingbox=\&quot;38.6950759887695,38.6965446472168,-91.1586227416992,-91.1520233154297\&quot; lat=\&quot;38.6957456083531\&quot; lon=\&quot;-91.1552550683042\&quot; display_name=\&quot;Innsbruck, Warren, Aspenhoff, Warren County, Missouri, United States of America\&quot; class=\&quot;highway\&quot; type=\&quot;service\&quot;/&gt;\n&quot;
+						+ &quot;  &lt;place place_id=\&quot;25440203\&quot; osm_type=\&quot;way\&quot; osm_id=\&quot;18869491\&quot; place_rank=\&quot;27\&quot; boundingbox=\&quot;43.5335311889648,43.5358810424805,-71.1356735229492,-71.1316146850586\&quot; lat=\&quot;43.5341678362733\&quot; lon=\&quot;-71.1338615946084\&quot; display_name=\&quot;Innsbruck, New Durham, Strafford County, New Hampshire, 03855, United States of America\&quot; class=\&quot;highway\&quot; type=\&quot;service\&quot;/&gt;\n&quot;
+						+ &quot;&lt;/searchresults&gt;&quot;;
+				result = &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;&quot;
+						+ &quot; ?&gt;&lt;searchresults timestamp='Wed, 29 Aug&quot;
+						+ &quot; 12 06:33:22 +0100' attribution='Data Co&quot;
+						+ &quot;pyright OpenStreetMap Contributors, Some&quot;
+						+ &quot; Rights Reserved. CC-BY-SA 2.0.' queryst&quot;
+						+ &quot;ring='bäckerei' polygon='false' exclude_&quot;
+						+ &quot;place_ids='2323884,1350101,7261519,17658&quot;
+						+ &quot;198,16228926,7825940,8072208,16133988,51&quot;
+						+ &quot;52777,7708711,16471512,7844042,12267468,&quot;
+						+ &quot;6699146,7114466,6856494,856383,9874163,7&quot;
+						+ &quot;135888,868611,11403029,6568269,16118527,&quot;
+						+ &quot;7540110,11628259,1339026,19587330,115253&quot;
+						+ &quot;72,11534612,11748035' more_url='http://n&quot;
+						+ &quot;ominatim.openstreetmap.org/search?format&quot;
+						+ &quot;=xml&amp;amp;exclude_place_ids=2323884,13501&quot;
+						+ &quot;01,7261519,17658198,16228926,7825940,807&quot;
+						+ &quot;2208,16133988,5152777,7708711,16471512,7&quot;
+						+ &quot;844042,12267468,6699146,7114466,6856494,&quot;
+						+ &quot;856383,9874163,7135888,868611,11403029,6&quot;
+						+ &quot;568269,16118527,7540110,11628259,1339026&quot;
+						+ &quot;,19587330,11525372,11534612,11748035&amp;amp&quot;
+						+ &quot;;accept-language=de&amp;amp;viewbox=13.24470&quot;
+						+ &quot;5200195312%2C52.43435075954755%2C13.3324&quot;
+						+ &quot;2416381836%2C52.461762311435194&amp;amp;q=b%&quot;
+						+ &quot;C3%A4ckerei'&gt;&lt;place place_id='2323884' o&quot;
+						+ &quot;sm_type='node' osm_id='352983574' place_&quot;
+						+ &quot;rank='30' boundingbox=\&quot;52.443815460205,&quot;
+						+ &quot;52.463819274902,13.313097229004,13.33309&quot;
+						+ &quot;8182678\&quot; lat='52.4538175' lon='13.32309&quot;
+						+ &quot;74' display_name='Bäckerei Mälzer, Schüt&quot;
+						+ &quot;zenstraße, Steglitz, Steglitz-Zehlendorf&quot;
+						+ &quot;, Berlin, 12165, Deutschland' class='sho&quot;
+						+ &quot;p' type='bakery' icon='http://nominatim.&quot;
+						+ &quot;openstreetmap.org/images/mapicons/shoppi&quot;
+						+ &quot;ng_bakery.p.20.png'/&gt;&lt;place place_id='13&quot;
+						+ &quot;50101' osm_type='node' osm_id='298794800&quot;
+						+ &quot;' place_rank='30' boundingbox=\&quot;52.43134&quot;
+						+ &quot;9029541,52.451352844238,13.282660713196,&quot;
+						+ &quot;13.30266166687\&quot; lat='52.4413499' lon='1&quot;
+						+ &quot;3.2926616' display_name='Bäckerei Bertra&quot;
+						+ &quot;m, 27, Curtiusstraße, Lichterfelde, Steg&quot;
+						+ &quot;litz-Zehlendorf, Berlin, 12205, Deutschl&quot;
+						+ &quot;and' class='shop' type='bakery' icon='ht&quot;
+						+ &quot;tp://nominatim.openstreetmap.org/images/&quot;
+						+ &quot;mapicons/shopping_bakery.p.20.png'/&gt;&lt;pla&quot;
+						+ &quot;ce place_id='7261519' osm_type='node' os&quot;
+						+ &quot;m_id='792690678' place_rank='30' boundin&quot;
+						+ &quot;gbox=\&quot;52.434942474365,52.454946289062,1&quot;
+						+ &quot;3.282605400085,13.30260635376\&quot; lat='52.&quot;
+						+ &quot;444945' lon='13.292606' display_name='Kn&quot;
+						+ &quot;ese-Bäckerei, Knesebeckstraße, Lichterfe&quot;
+						+ &quot;lde, Steglitz-Zehlendorf, Berlin, 12205,&quot;
+						+ &quot; Deutschland' class='shop' type='bakery'&quot;
+						+ &quot; icon='http://nominatim.openstreetmap.or&quot;
+						+ &quot;g/images/mapicons/shopping_bakery.p.20.p&quot;
+						+ &quot;ng'/&gt;&lt;place place_id='17658198' osm_type&quot;
+						+ &quot;='node' osm_id='1655185388' place_rank='&quot;
+						+ &quot;30' boundingbox=\&quot;52.426340332031,52.446&quot;
+						+ &quot;344146728,13.256445159912,13.27644611358&quot;
+						+ &quot;6\&quot; lat='52.4363419' lon='13.2664454' di&quot;
+						+ &quot;splay_name='Bäckerei Strauch, Berliner S&quot;
+						+ &quot;traße, Zehlendorf, Steglitz-Zehlendorf, &quot;
+						+ &quot;Berlin, 14169, Deutschland' class='shop'&quot;
+						+ &quot; type='bakery' icon='http://nominatim.op&quot;
+						+ &quot;enstreetmap.org/images/mapicons/shopping&quot;
+						+ &quot;_bakery.p.20.png'/&gt;&lt;place place_id='1622&quot;
+						+ &quot;8926' osm_type='node' osm_id='1455112119&quot;
+						+ &quot;' place_rank='30' boundingbox=\&quot;52.43713&quot;
+						+ &quot;973999,52.457143554687,13.296548118591,1&quot;
+						+ &quot;3.316549072266\&quot; lat='52.4471403' lon='1&quot;
+						+ &quot;3.3065482' display_name='Bäckerei Hillma&quot;
+						+ &quot;nn, 52, Moltkestraße, Lichterfelde, Steg&quot;
+						+ &quot;litz-Zehlendorf, Berlin, 12203, Deutschl&quot;
+						+ &quot;and' class='shop' type='bakery' icon='ht&quot;
+						+ &quot;tp://nominatim.openstreetmap.org/images/&quot;
+						+ &quot;mapicons/shopping_bakery.p.20.png'/&gt;&lt;pla&quot;
+						+ &quot;ce place_id='7825940' osm_type='node' os&quot;
+						+ &quot;m_id='803776974' place_rank='30' boundin&quot;
+						+ &quot;gbox=\&quot;52.447733154297,52.467736968994,1&quot;
+						+ &quot;3.280044784546,13.30004573822\&quot; lat='52.&quot;
+						+ &quot;4577338' lon='13.2900455' display_name='&quot;
+						+ &quot;Wiener Feinbäcker Heberer, Brümmerstraße&quot;
+						+ &quot;, Dahlem, Steglitz-Zehlendorf, Berlin, 1&quot;
+						+ &quot;4195, Deutschland' class='shop' type='ba&quot;
+						+ &quot;kery' icon='http://nominatim.openstreetm&quot;
+						+ &quot;ap.org/images/mapicons/shopping_bakery.p&quot;
+						+ &quot;.20.png'/&gt;&lt;place place_id='8072208' osm_&quot;
+						+ &quot;type='node' osm_id='814072915' place_ran&quot;
+						+ &quot;k='30' boundingbox=\&quot;52.430979003906,52.&quot;
+						+ &quot;450982818603,13.279904594421,13.29990554&quot;
+						+ &quot;8096\&quot; lat='52.4409802' lon='13.2899047'&quot;
+						+ &quot; display_name='Brotmeisterei Steinecke, &quot;
+						+ &quot;36-38, Curtiusstraße, Lichterfelde, Steg&quot;
+						+ &quot;litz-Zehlendorf, Berlin, 12205, Deutschl&quot;
+						+ &quot;and' class='shop' type='bakery' icon='ht&quot;
+						+ &quot;tp://nominatim.openstreetmap.org/images/&quot;
+						+ &quot;mapicons/shopping_bakery.p.20.png'/&gt;&lt;pla&quot;
+						+ &quot;ce place_id='16133988' osm_type='node' o&quot;
+						+ &quot;sm_id='1391486692' place_rank='30' bound&quot;
+						+ &quot;ingbox=\&quot;52.44658493042,52.466588745117,&quot;
+						+ &quot;13.310922851563,13.330923805237\&quot; lat='5&quot;
+						+ &quot;2.4565867' lon='13.3209229' display_name&quot;
+						+ &quot;='Wiedemann, Albrechtstraße, Steglitz, S&quot;
+						+ &quot;teglitz-Zehlendorf, Berlin, 12165, Deuts&quot;
+						+ &quot;chland' class='shop' type='bakery' icon=&quot;
+						+ &quot;'http://nominatim.openstreetmap.org/imag&quot;
+						+ &quot;es/mapicons/shopping_bakery.p.20.png'/&gt;&lt;&quot;
+						+ &quot;place place_id='5152777' osm_type='node'&quot;
+						+ &quot; osm_id='570034727' place_rank='30' boun&quot;
+						+ &quot;dingbox=\&quot;52.441808929443,52.46181274414&quot;
+						+ &quot;1,13.320470085144,13.340471038818\&quot; lat=&quot;
+						+ &quot;'52.4518101' lon='13.3304701' display_na&quot;
+						+ &quot;me='Konditorei Rabien, Klingsorstraße, S&quot;
+						+ &quot;teglitz, Steglitz-Zehlendorf, Berlin, 12&quot;
+						+ &quot;167, Deutschland' class='shop' type='bak&quot;
+						+ &quot;ery' icon='http://nominatim.openstreetma&quot;
+						+ &quot;p.org/images/mapicons/shopping_bakery.p.&quot;
+						+ &quot;20.png'/&gt;&lt;/searchresults&gt;&quot;;
+				// result = XML_VERSION_1_0_ENCODING_UTF_8
+				// +
+				// &quot;&lt;searchresults timestamp=\&quot;Tue, 08 Nov 11 22:49:54 -0500\&quot; attribution=\&quot;Data Copyright OpenStreetMap Contributors, Some Rights Reserved. CC-BY-SA 2.0.\&quot; querystring=\&quot;innsbruck\&quot; polygon=\&quot;false\&quot; exclude_place_ids=\&quot;228452,25664166,26135863,25440203\&quot; more_url=\&quot;http://open.mapquestapi.com/nominatim/v1/search?format=xml&amp;amp;exclude_place_ids=228452,25664166,26135863,25440203&amp;amp;accept-language=&amp;amp;q=innsbruck\&quot;&gt;\n&quot;
+				// + &quot;&lt;/searchresults&gt;&quot;;
+
+			}
+<span class="nc" id="L2371">			results = (Searchresults) XmlBindingTools.getInstance().unMarshall(</span>
+<span class="nc" id="L2372">					result);</span>
+<span class="nc bnc" id="L2373" title="All 2 branches missed.">			if (results == null) {</span>
+<span class="nc" id="L2374">				logger.warning(result + &quot; can't be parsed&quot;);</span>
+			}
+<span class="nc" id="L2376">		} catch (Exception e) {</span>
+<span class="nc" id="L2377">			logger.fine(&quot;Searching for &quot; + b.toString() + &quot; gave an error&quot;);</span>
+<span class="nc" id="L2378">			final String errorString = e.toString();</span>
+<span class="nc" id="L2379">			freemind.main.Resources.getInstance().logException(e);</span>
+<span class="nc" id="L2380">			logger.warning(&quot;Result was &quot; + result);</span>
+<span class="nc" id="L2381">			results.addPlace(getErrorPlace(errorString, &quot;ERROR&quot;));</span>
+		}
+<span class="nc bnc" id="L2383" title="All 2 branches missed.">		if (results.getListPlaceList().isEmpty()) {</span>
+			String textId;
+<span class="nc bnc" id="L2385" title="All 2 branches missed.">			if (limitSearchToRegion) {</span>
+<span class="nc" id="L2386">				textId = &quot;plugins.map.FreeMindMapController.LimitedSearchWithoutResult&quot;;</span>
+<span class="nc" id="L2387">			} else {</span>
+<span class="nc" id="L2388">				textId = &quot;plugins.map.FreeMindMapController.SearchWithoutResult&quot;;</span>
+			}
+<span class="nc" id="L2390">			Object[] messageArguments = { pText };</span>
+<span class="nc" id="L2391">			MessageFormat formatter = new MessageFormat(</span>
+<span class="nc" id="L2392">					mMindMapController.getText(textId));</span>
+<span class="nc" id="L2393">			String message = formatter.format(messageArguments);</span>
+<span class="nc" id="L2394">			results.addPlace(getErrorPlace(message, &quot;WARNING&quot;));</span>
+		}
+<span class="nc" id="L2396">		return results;</span>
+	}
+
+	public String wget(StringBuilder b) throws MalformedURLException,
+			IOException, UnsupportedEncodingException {
+		String result;
+<span class="nc" id="L2402">		mMindMapController.getFrame().setWaitingCursor(true);</span>
+		try {
+<span class="nc" id="L2404">			logger.fine(&quot;Searching for &quot; + b.toString());</span>
+<span class="nc" id="L2405">			URL url = new URL(b.toString());</span>
+<span class="nc" id="L2406">			URLConnection urlConnection = url.openConnection();</span>
+<span class="nc bnc" id="L2407" title="All 2 branches missed.">			if (Tools.isAboveJava4()) {</span>
+<span class="nc" id="L2408">				urlConnection.setConnectTimeout(Resources.getInstance()</span>
+<span class="nc" id="L2409">						.getIntProperty(OSM_NOMINATIM_CONNECT_TIMEOUT_IN_MS,</span>
+<span class="nc" id="L2410">								10000));</span>
+<span class="nc" id="L2411">				urlConnection</span>
+<span class="nc" id="L2412">						.setReadTimeout(Resources.getInstance().getIntProperty(</span>
+<span class="nc" id="L2413">								OSM_NOMINATIM_READ_TIMEOUT_IN_MS, 30000));</span>
+			}
+<span class="nc" id="L2415">			InputStream urlStream = urlConnection.getInputStream();</span>
+<span class="nc" id="L2416">			result = Tools.getFile(new InputStreamReader(urlStream));</span>
+<span class="nc" id="L2417">			result = new String(result.getBytes(), &quot;UTF-8&quot;);</span>
+<span class="nc" id="L2418">			logger.fine(result + &quot; was received for search &quot; + b);</span>
+<span class="nc" id="L2419">		} finally {</span>
+<span class="nc" id="L2420">			mMindMapController.getFrame().setWaitingCursor(false);</span>
+<span class="nc" id="L2421">		}</span>
+<span class="nc" id="L2422">		return result;</span>
+	}
+
+	protected Place getErrorPlace(final String errorString, String errorLevel) {
+<span class="nc" id="L2426">		Place place = new Place();</span>
+<span class="nc" id="L2427">		place.setDisplayName(errorString);</span>
+<span class="nc" id="L2428">		place.setOsmType(errorLevel);</span>
+<span class="nc" id="L2429">		Coordinate cursorPosition = getMap().getCursorPosition();</span>
+<span class="nc" id="L2430">		place.setLat(cursorPosition.getLat());</span>
+<span class="nc" id="L2431">		place.setLon(cursorPosition.getLon());</span>
+<span class="nc" id="L2432">		return place;</span>
+	}
+
+	public boolean isClickEnabled() {
+<span class="nc" id="L2436">		return mClickEnabled;</span>
+	}
+
+	public void setClickEnabled(boolean pClickEnabled) {
+<span class="nc" id="L2440">		mClickEnabled = pClickEnabled;</span>
+<span class="nc" id="L2441">	}</span>
+
+	public static TileSourceStore[] getmTileSources() {
+<span class="fc" id="L2444">		return sTileSources;</span>
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+	 */
+	public void actionPerformed(ActionEvent pE) {
+<span class="nc" id="L2454">		String statusText = &quot;&quot;;</span>
+		// here, we look wether or not the cursor is above a node.
+<span class="nc" id="L2456">		MapMarkerBase mapMarker = checkHit(mTimerMouseEvent);</span>
+<span class="nc bnc" id="L2457" title="All 2 branches missed.">		if (mapMarker instanceof MapMarkerLocation) {</span>
+<span class="nc" id="L2458">			MapNodePositionHolder posHolder = ((MapMarkerLocation) mapMarker)</span>
+<span class="nc" id="L2459">					.getNodePositionHolder();</span>
+
+<span class="nc" id="L2461">			logger.fine(&quot;Looking for hit on node &quot; + posHolder);</span>
+<span class="nc bnc" id="L2462" title="All 2 branches missed.">			if (posHolder != null) {</span>
+<span class="nc" id="L2463">				statusText = Tools.getNodeTextHierarchy(posHolder.getNode(),</span>
+<span class="nc" id="L2464">						mMapHook.getMindMapController()) + &quot;. &quot;;</span>
+			}
+		}
+		// calculate the distance to the cursor
+<span class="nc" id="L2468">		Coordinate coordinate = getCoordinateFromMouseEvent(mTimerMouseEvent);</span>
+<span class="nc" id="L2469">		Coordinate cursorPosition = getMap().getCursorPosition();</span>
+<span class="nc" id="L2470">		double distance = OsmMercator.getDistance(coordinate.getLat(),</span>
+<span class="nc" id="L2471">				coordinate.getLon(), cursorPosition.getLat(),</span>
+<span class="nc" id="L2472">				cursorPosition.getLon()) / 1000.0;</span>
+<span class="nc" id="L2473">		Object[] messageArguments = { new Double(distance),</span>
+<span class="nc" id="L2474">				new Double(coordinate.getLat()),</span>
+<span class="nc" id="L2475">				new Double(coordinate.getLon()) };</span>
+<span class="nc" id="L2476">		MessageFormat formatter = new MessageFormat(</span>
+<span class="nc" id="L2477">				mMindMapController.getText(&quot;plugins/map/MapDialog_Distance&quot;));</span>
+<span class="nc" id="L2478">		String message = formatter.format(messageArguments);</span>
+<span class="nc" id="L2479">		statusText += message;</span>
+<span class="nc" id="L2480">		mMapHook.getStatusLabel().setText(statusText);</span>
+<span class="nc" id="L2481">	}</span>
+
+	protected void selectContextMenuNode() {
+<span class="nc" id="L2484">		MindMapNode node = mCurrentPopupPositionHolder.getNode();</span>
+<span class="nc" id="L2485">		selectNode(node);</span>
+<span class="nc" id="L2486">	}</span>
+
+	protected void selectNode(MindMapNode node) {
+<span class="nc" id="L2489">		mMindMapController.select(node, Tools.getVectorWithSingleElement(node));</span>
+<span class="nc" id="L2490">	}</span>
+
+	public static String getLink(MapNodePositionHolder hook) {
+<span class="nc" id="L2493">		String tileSource = hook.getTileSource();</span>
+<span class="nc" id="L2494">		Coordinate position = hook.getPosition();</span>
+<span class="nc" id="L2495">		Coordinate mapCenter = hook.getMapCenter();</span>
+<span class="nc" id="L2496">		int zoom = hook.getZoom();</span>
+<span class="nc" id="L2497">		return getLink(tileSource, position, mapCenter, zoom);</span>
+	}
+
+	public static String getLink(String tileSource, Coordinate position,
+			Coordinate mapCenter, int zoom) {
+<span class="fc" id="L2502">		String layer = &quot;M&quot;;</span>
+<span class="fc" id="L2503">		TileSourceStore tileSourceByName = FreeMindMapController</span>
+<span class="fc" id="L2504">				.getTileSourceByName(tileSource);</span>
+<span class="fc bfc" id="L2505" title="All 2 branches covered.">		if (tileSourceByName != null) {</span>
+<span class="fc" id="L2506">			layer = tileSourceByName.mLayerName;</span>
+		}
+		/*
+		 * The embedded link would work for IE, too. But it is not easy to
+		 * configure as a bounding box is necessary. It reads like
+		 * osm.org/export/embed.html?bbox=...
+		 */
+<span class="fc" id="L2513">		String link = &quot;http://www.openstreetmap.org/?&quot; + &quot;mlat=&quot;</span>
+<span class="fc" id="L2514">				+ position.getLat() + &quot;&amp;mlon=&quot; + position.getLon() + &quot;&amp;lat=&quot;</span>
+<span class="fc" id="L2515">				+ mapCenter.getLat() + &quot;&amp;lon=&quot; + mapCenter.getLon() + &quot;&amp;zoom=&quot;</span>
+<span class="fc" id="L2516">				+ zoom + &quot;&amp;layers=&quot; + layer;</span>
+<span class="fc" id="L2517">		return link;</span>
+	}
+
+	public void keyTyped(KeyEvent pEvent) {
+<span class="nc bnc" id="L2521" title="All 2 branches missed.">		if (mMapHook.isSearchBarVisible()) {</span>
+<span class="nc" id="L2522">			return;</span>
+		}
+<span class="nc" id="L2524">		Action[] specialKeyActions = { mZoomInAction, mZoomOutAction };</span>
+<span class="nc" id="L2525">		Tools.invokeActionsToKeyboardLayoutDependantCharacters(pEvent,</span>
+<span class="nc" id="L2526">				specialKeyActions, mMapDialog);</span>
+<span class="nc bnc" id="L2527" title="All 4 branches missed.">		if (!pEvent.isConsumed() &amp;&amp; !pEvent.isActionKey()</span>
+<span class="nc bnc" id="L2528" title="All 2 branches missed.">				&amp;&amp; (Character.isLetter(pEvent.getKeyChar()))</span>
+<span class="nc bnc" id="L2529" title="All 2 branches missed.">				&amp;&amp; ((pEvent.getModifiers() &amp; MODIFIERS_WITHOUT_SHIFT) == 0)) {</span>
+			// open search bar and process event.
+			// logger.info(&quot;Key event processed: &quot; + pEvent);
+<span class="nc" id="L2532">			mMapHook.toggleSearchBar(pEvent);</span>
+<span class="nc" id="L2533">			mMapHook.setSingleSearch();</span>
+		}
+
+<span class="nc" id="L2536">	}</span>
+
+	public void keyReleased(KeyEvent pEvent) {
+<span class="nc" id="L2539">	}</span>
+
+	public void keyPressed(KeyEvent pEvent) {
+<span class="nc bnc" id="L2542" title="All 2 branches missed.">		if (mMapHook.isSearchBarVisible()) {</span>
+<span class="nc" id="L2543">			return;</span>
+		}
+<span class="nc" id="L2545">		int modifiers = pEvent.getModifiers() &amp; MODIFIERS_WITHOUT_SHIFT;</span>
+		// only plain of shifted cursor keys are consumed here.
+<span class="nc bnc" id="L2547" title="All 2 branches missed.">		if (modifiers == 0) {</span>
+<span class="nc" id="L2548">			int dx = MOVE_PIXEL_AMOUNT;</span>
+<span class="nc" id="L2549">			int dy = MOVE_PIXEL_AMOUNT;</span>
+<span class="nc bnc" id="L2550" title="All 2 branches missed.">			if (pEvent.isShiftDown()) {</span>
+<span class="nc" id="L2551">				dx = (int) (map.getWidth() * PAGE_DOWN_FACTOR);</span>
+<span class="nc" id="L2552">				dy = (int) (map.getHeight() * PAGE_DOWN_FACTOR);</span>
+			}
+<span class="nc bnc" id="L2554" title="All 5 branches missed.">			switch (pEvent.getKeyCode()) {</span>
+			case KeyEvent.VK_LEFT:
+<span class="nc" id="L2556">				map.moveMap(-dx, 0);</span>
+<span class="nc" id="L2557">				pEvent.consume();</span>
+<span class="nc" id="L2558">				break;</span>
+			case KeyEvent.VK_RIGHT:
+<span class="nc" id="L2560">				map.moveMap(dx, 0);</span>
+<span class="nc" id="L2561">				pEvent.consume();</span>
+<span class="nc" id="L2562">				break;</span>
+			case KeyEvent.VK_UP:
+<span class="nc" id="L2564">				map.moveMap(0, -dy);</span>
+<span class="nc" id="L2565">				pEvent.consume();</span>
+<span class="nc" id="L2566">				break;</span>
+			case KeyEvent.VK_DOWN:
+<span class="nc" id="L2568">				map.moveMap(0, dy);</span>
+<span class="nc" id="L2569">				pEvent.consume();</span>
+				break;
+			}
+		}
+<span class="nc" id="L2573">	}</span>
+
+	public Vector getPositionHolderVector() {
+<span class="nc" id="L2576">		return mPositionHolderVector;</span>
+	}
+
+	public int getPositionHolderIndex() {
+<span class="nc" id="L2580">		return mPositionHolderIndex;</span>
+	}
+
+	/**
+	 * @param positionHolderIndex
+	 * @return true, if positionHolderIndex is ok.
+	 */
+	public boolean checkPositionHolderIndex(int positionHolderIndex) {
+<span class="nc bnc" id="L2588" title="All 4 branches missed.">		return !(positionHolderIndex &lt; -1 || positionHolderIndex &gt;= mPositionHolderVector</span>
+<span class="nc" id="L2589">				.size());</span>
+	}
+
+	public void setPositionHolderIndex(int positionHolderIndex) {
+<span class="nc bnc" id="L2593" title="All 2 branches missed.">		if (!checkPositionHolderIndex(positionHolderIndex)) {</span>
+<span class="nc" id="L2594">			throw new IllegalArgumentException(&quot;Index out of range &quot;</span>
+<span class="nc" id="L2595">					+ positionHolderIndex);</span>
+		}
+<span class="nc" id="L2597">		mPositionHolderIndex = positionHolderIndex;</span>
+<span class="nc" id="L2598">	}</span>
+
+	/**
+	 * @param pListener
+	 */
+	public void addCursorPositionListener(CursorPositionListener pListener) {
+<span class="nc" id="L2604">		mCursorPositionListeners.add(pListener);</span>
+<span class="nc" id="L2605">	}</span>
+
+	/**
+	 * @param pSelected
+	 * @param pPlace
+	 */
+	public void addNode(MindMapNode pSelected, Place pPlace) {
+<span class="nc" id="L2612">		addNode(pSelected, pPlace.getDisplayName(), pPlace.getLat(),</span>
+<span class="nc" id="L2613">				pPlace.getLon());</span>
+<span class="nc" id="L2614">	}</span>
+
+	public void addNode(MindMapNode pSelected, String pText, double lat,
+			double lon) {
+<span class="nc" id="L2618">		final MindMapNode targetNode = pSelected;</span>
+<span class="nc" id="L2619">		final MindMapNode newNode = insertNewNode(targetNode);</span>
+<span class="nc" id="L2620">		mMindMapController.setNodeText(newNode, pText);</span>
+<span class="nc" id="L2621">		placeNodeAt(newNode, new Coordinate(lat, lon), map.getPosition(),</span>
+<span class="nc" id="L2622">				map.getZoom());</span>
+<span class="nc" id="L2623">	}</span>
+
+	private class AddSearchResultsToMapTask extends FreeMindTask {
+
+		private Place[] mPlaces;
+
+<span class="nc" id="L2629">		public AddSearchResultsToMapTask(int[] pSelectedRows) {</span>
+<span class="nc" id="L2630">			super(mMapDialog, pSelectedRows.length, MAP_DIALOG_PROGRESS_MESSAGE);</span>
+			// deep copy
+<span class="nc" id="L2632">			mPlaces = new Place[pSelectedRows.length];</span>
+<span class="nc bnc" id="L2633" title="All 2 branches missed.">			for (int i = 0; i &lt; pSelectedRows.length; i++) {</span>
+<span class="nc" id="L2634">				mPlaces[i] = mMapHook.getPlace(pSelectedRows[i]);</span>
+			}
+<span class="nc" id="L2636">		}</span>
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see freemind.common.FreeMindTask#processAction()
+		 */
+		protected boolean processAction() throws Exception {
+<span class="nc" id="L2644">			int selIndex = getRounds();</span>
+<span class="nc" id="L2645">			final Place place = mPlaces[selIndex];</span>
+<span class="nc" id="L2646">			mProgressDescription = new ProgressDescription(</span>
+<span class="nc" id="L2647">					MAP_DIALOG_ADD_PLACES,</span>
+<span class="nc" id="L2648">					new Object[] { place.getDisplayName() });</span>
+<span class="nc" id="L2649">			final MindMapNode selected = getMindMapController().getSelected();</span>
+<span class="nc" id="L2650">			EventQueue.invokeAndWait(new Runnable() {</span>
+				public void run() {
+<span class="nc" id="L2652">					addNode(selected, place);</span>
+<span class="nc" id="L2653">				}</span>
+			});
+<span class="nc" id="L2655">			return true;</span>
+		}
+
+	}
+
+	public void addSearchResultsToMap(int[] pSelectedRows) {
+<span class="nc" id="L2661">		AddSearchResultsToMapTask task = new AddSearchResultsToMapTask(</span>
+<span class="nc" id="L2662">				pSelectedRows);</span>
+<span class="nc" id="L2663">		task.start();</span>
+<span class="nc" id="L2664">	}</span>
+
+	private ModeController getMindMapController() {
+<span class="nc" id="L2667">		return mMindMapController;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span>FreeMind_integration (Aug 16, 2014 3:57:47 PM)</div></body></html>

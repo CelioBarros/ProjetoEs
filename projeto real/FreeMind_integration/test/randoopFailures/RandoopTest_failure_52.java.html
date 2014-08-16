@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../.resources/report.gif" type="image/gif"/><title>RandoopTest_failure_52.java</title><link rel="stylesheet" href="../../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../.sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FreeMind_integration (Aug 16, 2014 3:57:47 PM)</a> &gt; <a href="../../index.html" class="el_group">FreeMind_integration</a> &gt; <a href="../index.html" class="el_bundle">test</a> &gt; <a href="index.source.html" class="el_package">randoopFailures</a> &gt; <span class="el_source">RandoopTest_failure_52.java</span></div><h1>RandoopTest_failure_52.java</h1><pre class="source lang-java linenums">package randoopFailures;
+
+import junit.framework.*;
+
+<span class="fc" id="L5">public class RandoopTest_failure_52 extends TestCase {</span>
+
+<span class="fc" id="L7">  public static boolean debug = false;</span>
+
+  public void test1() throws Throwable {
+
+<span class="pc bpc" id="L11" title="1 of 2 branches missed.">    if (debug) System.out.printf(&quot;%nRandoopTest_failure_52.test1&quot;);</span>
+
+
+<span class="nc" id="L14">    plugins.map.MapNodePositionHolder var0 = new plugins.map.MapNodePositionHolder();</span>
+<span class="nc" id="L15">    freemind.main.XMLElement var1 = new freemind.main.XMLElement();</span>
+<span class="nc" id="L16">    java.lang.String var2 = var1.getTagName();</span>
+<span class="nc" id="L17">    java.util.Iterator var3 = var1.enumerateAttributeNames();</span>
+<span class="nc" id="L18">    java.util.Iterator var4 = var1.enumeratePropertyNames();</span>
+<span class="nc" id="L19">    var0.loadFrom(var1);</span>
+<span class="nc" id="L20">    freemind.main.XMLElement var6 = new freemind.main.XMLElement();</span>
+<span class="nc" id="L21">    java.lang.String var7 = var6.getTagName();</span>
+<span class="nc" id="L22">    java.util.Iterator var8 = var6.enumerateAttributeNames();</span>
+<span class="nc" id="L23">    java.util.Iterator var9 = var6.enumeratePropertyNames();</span>
+<span class="nc" id="L24">    var0.loadFrom(var6);</span>
+<span class="nc" id="L25">    var0.addTooltip();</span>
+
+<span class="nc" id="L27">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span>FreeMind_integration (Aug 16, 2014 3:57:47 PM)</div></body></html>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../.resources/report.gif" type="image/gif"/><title>MapMarkerLocation.java</title><link rel="stylesheet" href="../../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../.sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FreeMind_integration (Aug 16, 2014 2:28:58 PM)</a> &gt; <a href="../../index.html" class="el_group">FreeMind_integration</a> &gt; <a href="../index.html" class="el_bundle">FreeMind_integration</a> &gt; <a href="index.source.html" class="el_package">plugins.map</a> &gt; <span class="el_source">MapMarkerLocation.java</span></div><h1>MapMarkerLocation.java</h1><pre class="source lang-java linenums">/*FreeMind - A Program for creating and viewing Mindmaps
+ *Copyright (C) 2000-2011 Joerg Mueller, Daniel Polansky, Christian Foltin, Dimitri Polivaev and others.
+ *
+ *See COPYING for Details
+ *
+ *This program is free software; you can redistribute it and/or
+ *modify it under the terms of the GNU General Public License
+ *as published by the Free Software Foundation; either version 2
+ *of the License, or (at your option) any later version.
+ *
+ *This program is distributed in the hope that it will be useful,
+ *but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *GNU General Public License for more details.
+ *
+ *You should have received a copy of the GNU General Public License
+ *along with this program; if not, write to the Free Software
+ *Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
+package plugins.map;
+
+
+
+import freemind.modes.MindMapNode;
+
+public class MapMarkerLocation extends MapMarkerBase {
+
+	private final MapNodePositionHolder mNodePositionHolder;
+	/**
+	 * @param pNodePositionHolder
+	 * @param pMapDialog 
+	 */
+	public MapMarkerLocation(MapNodePositionHolder pNodePositionHolder, MapDialog pMapDialog) {
+<span class="nc" id="L34">		super(pMapDialog);</span>
+<span class="nc" id="L35">		mNodePositionHolder = pNodePositionHolder;</span>
+<span class="nc" id="L36">		update();</span>
+<span class="nc" id="L37">	}</span>
+
+	/**
+	 * Either start or when something changes on the node, this method is called.
+	 */
+	public void update() {
+<span class="nc" id="L43">		MindMapNode node = mNodePositionHolder.getNode();</span>
+<span class="nc" id="L44">		setText(node.getText());</span>
+<span class="nc" id="L45">		setForeground(node.getColor());</span>
+<span class="nc" id="L46">		setSize(getPreferredSize());</span>
+<span class="nc" id="L47">	}</span>
+
+	public double getLat() {
+<span class="nc" id="L50">		return mNodePositionHolder.getPosition().getLat();</span>
+	}
+
+	public double getLon() {
+<span class="nc" id="L54">		return mNodePositionHolder.getPosition().getLon();</span>
+	}
+
+	public String toString() {
+<span class="nc" id="L58">		return &quot;MapMarkerLocation for node &quot;</span>
+<span class="nc" id="L59">				+ mNodePositionHolder.getNode().getText() + &quot; at &quot; + getLat()</span>
+<span class="nc" id="L60">				+ &quot; &quot; + getLon();</span>
+	}
+
+	public MapNodePositionHolder getNodePositionHolder() {
+<span class="nc" id="L64">		return mNodePositionHolder;</span>
+	}
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span>FreeMind_integration (Aug 16, 2014 2:28:58 PM)</div></body></html>

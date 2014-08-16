@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../.resources/report.gif" type="image/gif"/><title>MapSearchMarkerLocation.java</title><link rel="stylesheet" href="../../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../.sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FreeMind_integration (Aug 16, 2014 3:57:47 PM)</a> &gt; <a href="../../index.html" class="el_group">FreeMind_integration</a> &gt; <a href="../index.html" class="el_bundle">FreeMind_integration</a> &gt; <a href="index.source.html" class="el_package">plugins.map</a> &gt; <span class="el_source">MapSearchMarkerLocation.java</span></div><h1>MapSearchMarkerLocation.java</h1><pre class="source lang-java linenums">/*FreeMind - A Program for creating and viewing Mindmaps
+ *Copyright (C) 2000-2011 Joerg Mueller, Daniel Polansky, Christian Foltin, Dimitri Polivaev and others.
+ *
+ *See COPYING for Details
+ *
+ *This program is free software; you can redistribute it and/or
+ *modify it under the terms of the GNU General Public License
+ *as published by the Free Software Foundation; either version 2
+ *of the License, or (at your option) any later version.
+ *
+ *This program is distributed in the hope that it will be useful,
+ *but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *GNU General Public License for more details.
+ *
+ *You should have received a copy of the GNU General Public License
+ *along with this program; if not, write to the Free Software
+ *Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
+package plugins.map;
+
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.Stroke;
+
+import freemind.controller.actions.generated.instance.Place;
+
+public class MapSearchMarkerLocation extends MapMarkerBase {
+
+	public static final int CIRCLE_SELECTED_FACTOR = 2;
+	private static final int CIRCLE_DIAMETER = CIRCLE_RADIUS * 2;
+	private final Place mPlace;
+
+	/**
+	 * @param pMapDialog
+	 * @param pNewPlace
+	 */
+	public MapSearchMarkerLocation(MapDialog pMapDialog, Place pNewPlace) {
+<span class="nc" id="L42">		super(pMapDialog);</span>
+<span class="nc" id="L43">		mBulletColor = Color.RED;</span>
+<span class="nc" id="L44">		mPlace = pNewPlace;</span>
+<span class="nc" id="L45">		update();</span>
+<span class="nc" id="L46">	}</span>
+
+	/**
+	 * Either start or when something changes on the node, this method is called.
+	 */
+	public void update() {
+<span class="nc" id="L52">		setText(mPlace.getDisplayName());</span>
+<span class="nc" id="L53">		setForeground(mBulletColor);</span>
+<span class="nc" id="L54">		setSize(getPreferredSize());</span>
+<span class="nc" id="L55">	}</span>
+
+	public double getLat() {
+<span class="nc" id="L58">		return mPlace.getLat();</span>
+	}
+
+	public double getLon() {
+<span class="nc" id="L62">		return mPlace.getLon();</span>
+	}
+
+
+	/* (non-Javadoc)
+	 * @see plugins.map.MapMarkerBase#paintCenter(java.awt.Graphics, java.awt.Point)
+	 */
+	protected void paintCenter(Graphics pG, Point pPosition) {
+<span class="nc bnc" id="L70" title="All 2 branches missed.">		if (isSelected()) {</span>
+<span class="nc" id="L71">			Graphics2D g2 = (Graphics2D) pG;</span>
+<span class="nc" id="L72">			Stroke oldStroke = g2.getStroke();</span>
+<span class="nc" id="L73">			g2.setStroke(new BasicStroke(4));</span>
+<span class="nc" id="L74">			int xo = pPosition.x - CIRCLE_RADIUS * CIRCLE_SELECTED_FACTOR;</span>
+<span class="nc" id="L75">			int xu = pPosition.x + CIRCLE_RADIUS * CIRCLE_SELECTED_FACTOR;</span>
+<span class="nc" id="L76">			int yo = pPosition.y - CIRCLE_RADIUS * CIRCLE_SELECTED_FACTOR;</span>
+<span class="nc" id="L77">			int yu = pPosition.y + CIRCLE_RADIUS * CIRCLE_SELECTED_FACTOR;</span>
+<span class="nc" id="L78">			g2.drawLine(xo, yo, xu, yu);</span>
+<span class="nc" id="L79">			g2.drawLine(xu, yo, xo, yu);</span>
+<span class="nc" id="L80">			g2.setStroke(oldStroke);</span>
+<span class="nc" id="L81">		} else {</span>
+<span class="nc" id="L82">			super.paintCenter(pG, pPosition);</span>
+		}
+<span class="nc" id="L84">	}</span>
+	public String toString() {
+<span class="nc" id="L86">		return &quot;MapSearchMarkerLocation for search text &quot;</span>
+<span class="nc" id="L87">				+ mPlace.getDisplayName() + &quot; at &quot; + getLat() + &quot; &quot; + getLon();</span>
+	}
+
+	public Place getPlace() {
+<span class="nc" id="L91">		return mPlace;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span>FreeMind_integration (Aug 16, 2014 3:57:47 PM)</div></body></html>

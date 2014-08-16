@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../.resources/report.gif" type="image/gif"/><title>ExportPdf.java</title><link rel="stylesheet" href="../../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../.sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FreeMind_integration (Aug 16, 2014 3:57:47 PM)</a> &gt; <a href="../../index.html" class="el_group">FreeMind_integration</a> &gt; <a href="../index.html" class="el_bundle">FreeMind_integration</a> &gt; <a href="index.source.html" class="el_package">plugins.svg</a> &gt; <span class="el_source">ExportPdf.java</span></div><h1>ExportPdf.java</h1><pre class="source lang-java linenums">/*FreeMind - A Program for creating and viewing Mindmaps
+ *Copyright (C) 2000-2004  Joerg Mueller, Daniel Polansky, Christian Foltin and others.
+ *
+ *See COPYING for Details
+ *
+ *This program is free software; you can redistribute it and/or
+ *modify it under the terms of the GNU General Public License
+ *as published by the Free Software Foundation; either version 2
+ *of the License, or (at your option) any later version.
+ *
+ *This program is distributed in the hope that it will be useful,
+ *but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *GNU General Public License for more details.
+ *
+ *You should have received a copy of the GNU General Public License
+ *along with this program; if not, write to the Free Software
+ *Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ *
+ * Created on 01.11.2004
+ */
+
+
+package plugins.svg;
+
+import java.awt.print.PageFormat;
+import java.awt.print.Paper;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Vector;
+
+import javax.swing.JOptionPane;
+
+import org.apache.batik.svggen.SVGGraphics2D;
+import org.apache.batik.transcoder.TranscoderInput;
+import org.apache.batik.transcoder.TranscoderOutput;
+import org.apache.batik.transcoder.TranscodingHints.Key;
+import org.apache.fop.svg.PDFTranscoder;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import freemind.controller.Controller;
+import freemind.main.Tools;
+import freemind.modes.MindMapNode;
+import freemind.view.mindmapview.MapView;
+
+/**
+ * @author foltin
+ * 
+ */
+<span class="nc" id="L55">public class ExportPdf extends ExportVectorGraphic {</span>
+<span class="nc" id="L56">	ExportPdfPapers papers = new ExportPdfPapers();</span>
+
+	public void startupMapHook() {
+<span class="nc" id="L59">		super.startupMapHook();</span>
+<span class="nc" id="L60">		boolean nodeExport = Tools.safeEquals(&quot;node&quot;,</span>
+<span class="nc" id="L61">				getResourceString(&quot;export_type&quot;));</span>
+<span class="nc" id="L62">		HashMap transcodingHints = null;</span>
+<span class="nc" id="L63">		List selecteds = getController().getSelecteds();</span>
+<span class="nc" id="L64">		Vector documentsToOpen = new Vector();</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">		while (!selecteds.isEmpty()) {</span>
+<span class="nc" id="L66">			MindMapNode selectedNode = (MindMapNode) selecteds.remove(0);</span>
+<span class="nc" id="L67">			String nameExtension = null;</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">			if (nodeExport) {</span>
+<span class="nc" id="L69">				nameExtension = &quot; &quot;</span>
+<span class="nc" id="L70">						+ selectedNode.getShortText(getController());</span>
+			}
+<span class="nc" id="L72">			File chosenFile = chooseFile(&quot;pdf&quot;,</span>
+<span class="nc" id="L73">					getResourceString(&quot;export_pdf_text&quot;), nameExtension);</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">			if (chosenFile == null) {</span>
+<span class="nc" id="L75">				return;</span>
+			}
+<span class="nc bnc" id="L77" title="All 2 branches missed.">			if (transcodingHints == null) {</span>
+<span class="nc" id="L78">				transcodingHints = choosePaper();</span>
+			}
+<span class="nc bnc" id="L80" title="All 2 branches missed.">			if (transcodingHints == null) {</span>
+<span class="nc" id="L81">				return;</span>
+			}
+<span class="nc" id="L83">			getController().getFrame().setWaitingCursor(true);</span>
+			try {
+<span class="nc" id="L85">				exportAsPdf(nodeExport, selectedNode, chosenFile,</span>
+<span class="nc" id="L86">						transcodingHints);</span>
+<span class="nc" id="L87">				documentsToOpen.add(chosenFile);</span>
+<span class="nc" id="L88">			} catch (Exception e) {</span>
+<span class="nc" id="L89">				freemind.main.Resources.getInstance().logException(e);</span>
+<span class="nc" id="L90">				JOptionPane.showMessageDialog(getController().getFrame()</span>
+<span class="nc" id="L91">						.getContentPane(), e.getLocalizedMessage(), null,</span>
+<span class="nc" id="L92">						JOptionPane.ERROR_MESSAGE);</span>
+			}
+<span class="nc" id="L94">			getController().getFrame().setWaitingCursor(false);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">			if (!nodeExport) {</span>
+<span class="nc" id="L96">				selecteds.clear();</span>
+			}
+		}
+		try {
+<span class="nc bnc" id="L100" title="All 2 branches missed.">			for (Iterator it = documentsToOpen.iterator(); it.hasNext();) {</span>
+<span class="nc" id="L101">				File fileToOpen = (File) it.next();</span>
+<span class="nc" id="L102">				getController().getFrame().openDocument(</span>
+<span class="nc" id="L103">						Tools.fileToUrl(fileToOpen));</span>
+			}
+<span class="nc" id="L105">		} catch (Exception e) {</span>
+<span class="nc" id="L106">			freemind.main.Resources.getInstance().logException(e);</span>
+		}
+<span class="nc" id="L108">	}</span>
+
+	/**
+	 * @return a map PDFTranscoder-&gt;value.
+	 */
+	public HashMap choosePaper() {
+<span class="nc" id="L114">		HashMap retValue = new HashMap();</span>
+		// user dialog
+<span class="nc" id="L116">		String[] paperNames = papers.getPaperNames();</span>
+<span class="nc" id="L117">		Controller controller = this.getController().getController();</span>
+<span class="nc" id="L118">		ExportPdfDialog dialog = new ExportPdfDialog(getController().getFrame()</span>
+<span class="nc" id="L119">				.getJFrame(), paperNames, controller);</span>
+<span class="nc" id="L120">		dialog.setVisible(true);</span>
+
+		// canceled?
+<span class="nc bnc" id="L123" title="All 2 branches missed.">		if (!dialog.getResult()) {</span>
+<span class="nc" id="L124">			return null;</span>
+		}
+
+		// get user input for format
+<span class="nc" id="L128">		int orientation = dialog.getOrientation();</span>
+<span class="nc" id="L129">		String format = dialog.getFormat();</span>
+<span class="nc" id="L130">		logger.info(&quot;Paper format=&quot; + format);</span>
+
+		// set page format
+<span class="nc" id="L133">		PageFormat pageFormat = new PageFormat();</span>
+<span class="nc" id="L134">		pageFormat.setOrientation(orientation);</span>
+<span class="nc" id="L135">		Paper paper = papers.determinePaper(format);</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">		if (paper != null) {</span>
+<span class="nc" id="L137">			pageFormat.setPaper(paper);</span>
+
+<span class="nc bnc" id="L139" title="All 2 branches missed.">			if (pageFormat.getOrientation() == PageFormat.PORTRAIT) {</span>
+<span class="nc" id="L140">				logger.info(&quot;Orientation: Portrait&quot;);</span>
+				// portrait
+<span class="nc" id="L142">				retValue.put(PDFTranscoder.KEY_HEIGHT, new Float(pageFormat</span>
+<span class="nc" id="L143">						.getPaper().getHeight()));</span>
+<span class="nc" id="L144">				retValue.put(PDFTranscoder.KEY_WIDTH, new Float(pageFormat</span>
+<span class="nc" id="L145">						.getPaper().getWidth()));</span>
+<span class="nc" id="L146">			} else {</span>
+<span class="nc" id="L147">				logger.info(&quot;Orientation: Landscape&quot;);</span>
+				// landscape
+<span class="nc" id="L149">				retValue.put(PDFTranscoder.KEY_HEIGHT, new Float(pageFormat</span>
+<span class="nc" id="L150">						.getPaper().getWidth()));</span>
+<span class="nc" id="L151">				retValue.put(PDFTranscoder.KEY_WIDTH, new Float(pageFormat</span>
+<span class="nc" id="L152">						.getPaper().getHeight()));</span>
+			}
+<span class="nc" id="L154">		} else {</span>
+<span class="nc" id="L155">			logger.severe(&quot;Paper == null&quot;);</span>
+		}
+<span class="nc" id="L157">		return retValue;</span>
+	}
+
+	/** For compatibility with groovy export scripts. */
+	public boolean exportAsPdf(boolean nodeExport, MindMapNode selectedNode,
+			File chosenFile) throws Exception {
+<span class="nc" id="L163">		return exportAsPdf(nodeExport, selectedNode, chosenFile, null);</span>
+	}
+
+	public boolean exportAsPdf(boolean nodeExport, MindMapNode selectedNode,
+			File chosenFile, HashMap pTranscoderHints) throws Exception {
+<span class="nc" id="L168">		MapView view = getController().getView();</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">		if (view == null)</span>
+<span class="nc" id="L170">			return false;</span>
+
+		SVGGraphics2D g2d;
+<span class="nc bnc" id="L173" title="All 2 branches missed.">		if (nodeExport) {</span>
+<span class="nc" id="L174">			g2d = fillSVGGraphics2D(view, selectedNode);</span>
+<span class="nc" id="L175">		} else {</span>
+<span class="nc" id="L176">			g2d = fillSVGGraphics2D(view);</span>
+		}
+
+<span class="nc" id="L179">		PDFTranscoder pdfTranscoder = new PDFTranscoder();</span>
+		/*
+		 * according to
+		 * https://sourceforge.net/tracker/?func=detail&amp;atid=107118&amp;
+		 * aid=1921334&amp;group_id=7118
+		 * 
+		 * Submitted By: Frank Spangenberg (f_spangenberg) Summary: Large mind
+		 * maps produce invalid PDF
+		 */
+<span class="nc" id="L188">		pdfTranscoder.addTranscodingHint(PDFTranscoder.KEY_MAX_HEIGHT,</span>
+<span class="nc" id="L189">				new Float(19200));</span>
+<span class="nc" id="L190">		pdfTranscoder.addTranscodingHint(PDFTranscoder.KEY_MAX_WIDTH,</span>
+<span class="nc" id="L191">				new Float(19200));</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">		if (pTranscoderHints != null) {</span>
+<span class="nc" id="L193">			for (Iterator it = pTranscoderHints.keySet().iterator(); it</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">					.hasNext();) {</span>
+<span class="nc" id="L195">				Key key = (Key) it.next();</span>
+<span class="nc" id="L196">				pdfTranscoder</span>
+<span class="nc" id="L197">						.addTranscodingHint(key, pTranscoderHints.get(key));</span>
+			}
+		}
+		/* end patch */
+<span class="nc" id="L201">		Document doc = g2d.getDOMFactory();</span>
+<span class="nc" id="L202">		Element rootE = doc.getDocumentElement();</span>
+<span class="nc" id="L203">		g2d.getRoot(rootE);</span>
+<span class="nc" id="L204">		TranscoderInput input = new TranscoderInput(doc);</span>
+<span class="nc" id="L205">		final FileOutputStream ostream = new FileOutputStream(chosenFile);</span>
+<span class="nc" id="L206">		final BufferedOutputStream bufStream = new BufferedOutputStream(ostream);</span>
+<span class="nc" id="L207">		TranscoderOutput output = new TranscoderOutput(bufStream);</span>
+		// save the image
+<span class="nc" id="L209">		pdfTranscoder.transcode(input, output);</span>
+		// flush and close the stream then exit
+<span class="nc" id="L211">		ostream.flush();</span>
+<span class="nc" id="L212">		ostream.close();</span>
+<span class="nc" id="L213">		return true;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span>FreeMind_integration (Aug 16, 2014 3:57:47 PM)</div></body></html>

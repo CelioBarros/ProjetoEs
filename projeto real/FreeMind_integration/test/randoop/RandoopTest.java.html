@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../.resources/report.gif" type="image/gif"/><title>RandoopTest.java</title><link rel="stylesheet" href="../../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../.sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FreeMind_integration (Aug 16, 2014 3:57:47 PM)</a> &gt; <a href="../../index.html" class="el_group">FreeMind_integration</a> &gt; <a href="../index.html" class="el_bundle">test</a> &gt; <a href="index.source.html" class="el_package">randoop</a> &gt; <span class="el_source">RandoopTest.java</span></div><h1>RandoopTest.java</h1><pre class="source lang-java linenums">package randoop;
+import junit.framework.*;
+import junit.textui.*;
+
+public class RandoopTest extends TestCase {
+
+  public static void main(String[] args) {
+<span class="nc" id="L8">    TestRunner runner = new TestRunner();</span>
+<span class="nc" id="L9">    TestResult result = runner.doRun(suite(), false);</span>
+<span class="nc bnc" id="L10" title="All 2 branches missed.">    if (! result.wasSuccessful()) {</span>
+<span class="nc" id="L11">      System.exit(1);</span>
+    }
+<span class="nc" id="L13">  }</span>
+
+  public RandoopTest(String name) {
+<span class="nc" id="L16">    super(name);</span>
+<span class="nc" id="L17">  }</span>
+
+  public static Test suite() {
+<span class="fc" id="L20">    TestSuite result = new TestSuite();</span>
+<span class="fc" id="L21">    result.addTest(new TestSuite(RandoopTest0.class));</span>
+<span class="fc" id="L22">    result.addTest(new TestSuite(RandoopTest1.class));</span>
+<span class="fc" id="L23">    result.addTest(new TestSuite(RandoopTest2.class));</span>
+<span class="fc" id="L24">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_1.class));</span>
+<span class="fc" id="L25">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_2.class));</span>
+<span class="fc" id="L26">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_3.class));</span>
+<span class="fc" id="L27">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_4.class));</span>
+<span class="fc" id="L28">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_5.class));</span>
+<span class="fc" id="L29">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_6.class));</span>
+<span class="fc" id="L30">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_7.class));</span>
+<span class="fc" id="L31">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_8.class));</span>
+<span class="fc" id="L32">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_9.class));</span>
+<span class="fc" id="L33">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_10.class));</span>
+<span class="fc" id="L34">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_11.class));</span>
+<span class="fc" id="L35">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_12.class));</span>
+<span class="fc" id="L36">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_13.class));</span>
+<span class="fc" id="L37">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_14.class));</span>
+<span class="fc" id="L38">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_15.class));</span>
+<span class="fc" id="L39">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_16.class));</span>
+<span class="fc" id="L40">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_17.class));</span>
+<span class="fc" id="L41">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_18.class));</span>
+<span class="fc" id="L42">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_19.class));</span>
+<span class="fc" id="L43">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_20.class));</span>
+<span class="fc" id="L44">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_21.class));</span>
+<span class="fc" id="L45">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_22.class));</span>
+<span class="fc" id="L46">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_23.class));</span>
+<span class="fc" id="L47">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_24.class));</span>
+<span class="fc" id="L48">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_25.class));</span>
+<span class="fc" id="L49">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_26.class));</span>
+<span class="fc" id="L50">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_27.class));</span>
+<span class="fc" id="L51">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_28.class));</span>
+<span class="fc" id="L52">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_29.class));</span>
+<span class="fc" id="L53">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_30.class));</span>
+<span class="fc" id="L54">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_31.class));</span>
+<span class="fc" id="L55">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_32.class));</span>
+<span class="fc" id="L56">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_33.class));</span>
+<span class="fc" id="L57">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_34.class));</span>
+<span class="fc" id="L58">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_35.class));</span>
+<span class="fc" id="L59">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_36.class));</span>
+<span class="fc" id="L60">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_37.class));</span>
+<span class="fc" id="L61">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_38.class));</span>
+<span class="fc" id="L62">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_39.class));</span>
+<span class="fc" id="L63">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_40.class));</span>
+<span class="fc" id="L64">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_41.class));</span>
+<span class="fc" id="L65">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_42.class));</span>
+<span class="fc" id="L66">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_43.class));</span>
+<span class="fc" id="L67">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_44.class));</span>
+<span class="fc" id="L68">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_45.class));</span>
+<span class="fc" id="L69">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_46.class));</span>
+<span class="fc" id="L70">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_47.class));</span>
+<span class="fc" id="L71">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_48.class));</span>
+<span class="fc" id="L72">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_49.class));</span>
+<span class="fc" id="L73">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_50.class));</span>
+<span class="fc" id="L74">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_51.class));</span>
+<span class="fc" id="L75">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_52.class));</span>
+<span class="fc" id="L76">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_53.class));</span>
+<span class="fc" id="L77">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_54.class));</span>
+<span class="fc" id="L78">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_55.class));</span>
+<span class="fc" id="L79">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_56.class));</span>
+<span class="fc" id="L80">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_57.class));</span>
+<span class="fc" id="L81">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_58.class));</span>
+<span class="fc" id="L82">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_59.class));</span>
+<span class="fc" id="L83">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_60.class));</span>
+<span class="fc" id="L84">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_61.class));</span>
+<span class="fc" id="L85">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_62.class));</span>
+<span class="fc" id="L86">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_63.class));</span>
+<span class="fc" id="L87">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_64.class));</span>
+<span class="fc" id="L88">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_65.class));</span>
+<span class="fc" id="L89">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_66.class));</span>
+<span class="fc" id="L90">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_67.class));</span>
+<span class="fc" id="L91">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_68.class));</span>
+<span class="fc" id="L92">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_69.class));</span>
+<span class="fc" id="L93">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_70.class));</span>
+<span class="fc" id="L94">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_71.class));</span>
+<span class="fc" id="L95">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_72.class));</span>
+<span class="fc" id="L96">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_73.class));</span>
+<span class="fc" id="L97">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_74.class));</span>
+<span class="fc" id="L98">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_75.class));</span>
+<span class="fc" id="L99">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_76.class));</span>
+<span class="fc" id="L100">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_77.class));</span>
+<span class="fc" id="L101">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_78.class));</span>
+<span class="fc" id="L102">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_79.class));</span>
+<span class="fc" id="L103">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_80.class));</span>
+<span class="fc" id="L104">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_81.class));</span>
+<span class="fc" id="L105">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_82.class));</span>
+<span class="fc" id="L106">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_83.class));</span>
+<span class="fc" id="L107">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_84.class));</span>
+<span class="fc" id="L108">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_85.class));</span>
+<span class="fc" id="L109">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_86.class));</span>
+<span class="fc" id="L110">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_87.class));</span>
+<span class="fc" id="L111">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_88.class));</span>
+<span class="fc" id="L112">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_89.class));</span>
+<span class="fc" id="L113">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_90.class));</span>
+<span class="fc" id="L114">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_91.class));</span>
+<span class="fc" id="L115">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_92.class));</span>
+<span class="fc" id="L116">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_93.class));</span>
+<span class="fc" id="L117">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_94.class));</span>
+<span class="fc" id="L118">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_95.class));</span>
+<span class="fc" id="L119">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_96.class));</span>
+<span class="fc" id="L120">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_97.class));</span>
+<span class="fc" id="L121">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_98.class));</span>
+<span class="fc" id="L122">    result.addTest(new TestSuite(randoopFailures.RandoopTest_failure_99.class));</span>
+<span class="fc" id="L123">    return result;</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span>FreeMind_integration (Aug 16, 2014 3:57:47 PM)</div></body></html>

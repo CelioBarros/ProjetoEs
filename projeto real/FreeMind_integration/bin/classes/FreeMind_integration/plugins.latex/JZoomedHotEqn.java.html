@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../.resources/report.gif" type="image/gif"/><title>JZoomedHotEqn.java</title><link rel="stylesheet" href="../../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../.sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FreeMind_integration (Aug 16, 2014 2:28:58 PM)</a> &gt; <a href="../../index.html" class="el_group">FreeMind_integration</a> &gt; <a href="../index.html" class="el_bundle">FreeMind_integration</a> &gt; <a href="index.source.html" class="el_package">plugins.latex</a> &gt; <span class="el_source">JZoomedHotEqn.java</span></div><h1>JZoomedHotEqn.java</h1><pre class="source lang-java linenums">package plugins.latex;
+
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.event.MouseEvent;
+import java.awt.geom.AffineTransform;
+
+import javax.swing.JDialog;
+import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+
+import atp.sHotEqn;
+
+public class JZoomedHotEqn extends sHotEqn {
+<span class="nc" id="L17">	static private double zoom = 1f;</span>
+<span class="nc" id="L18">	static String editorTitle = null;</span>
+	private LatexNodeHook model;
+
+<span class="nc" id="L21">	JZoomedHotEqn(LatexNodeHook model) {</span>
+<span class="nc" id="L22">		setDebug(false);</span>
+<span class="nc" id="L23">		setEditable(false);</span>
+<span class="nc" id="L24">		setBorder(true);</span>
+<span class="nc" id="L25">		this.model = model;</span>
+<span class="nc" id="L26">		setEquation(model.getContent(null));</span>
+<span class="nc bnc" id="L27" title="All 2 branches missed.">		if (editorTitle == null) {</span>
+<span class="nc" id="L28">			editorTitle = model.getMindMapController().getText(</span>
+<span class="nc" id="L29">					&quot;plugins/latex/LatexNodeHook.editorTitle&quot;);</span>
+		}
+<span class="nc" id="L31">	}</span>
+
+	public Dimension getPreferredSize() {
+<span class="nc bnc" id="L34" title="All 2 branches missed.">		Dimension dimension = isValid() ? super.getPreferredSize()</span>
+<span class="nc" id="L35">				: getSizeof(getEquation());</span>
+<span class="nc" id="L36">		dimension.height *= zoom;</span>
+<span class="nc" id="L37">		dimension.width *= zoom;</span>
+<span class="nc" id="L38">		return dimension;</span>
+	}
+
+	public void paint(Graphics g) {
+<span class="nc bnc" id="L42" title="All 2 branches missed.">		if (zoom != 1F) {</span>
+<span class="nc" id="L43">			Graphics2D g2 = (Graphics2D) g;</span>
+<span class="nc" id="L44">			final AffineTransform transform = g2.getTransform();</span>
+<span class="nc" id="L45">			g2.scale(zoom, zoom);</span>
+<span class="nc" id="L46">			super.paint(g);</span>
+<span class="nc" id="L47">			g2.setTransform(transform);</span>
+<span class="nc" id="L48">		} else {</span>
+<span class="nc" id="L49">			super.paint(g);</span>
+		}
+<span class="nc" id="L51">	}</span>
+
+	public void setBounds(int x, int y, int w, int h) {
+<span class="nc bnc" id="L54" title="All 2 branches missed.">		if (zoom &lt; 1f) {</span>
+<span class="nc" id="L55">			super.setBounds(x, y, (int) (w / zoom), (int) (h / zoom));</span>
+<span class="nc" id="L56">		} else {</span>
+<span class="nc" id="L57">			super.setBounds(x, y, (int) (w), (int) (h));</span>
+		}
+<span class="nc" id="L59">	}</span>
+
+	public void mouseClicked(MouseEvent e) {
+<span class="nc bnc" id="L62" title="All 2 branches missed.">		if (e.getButton() == MouseEvent.BUTTON1) {</span>
+<span class="nc" id="L63">			edit();</span>
+<span class="nc" id="L64">			e.consume();</span>
+<span class="nc" id="L65">			return;</span>
+		}
+<span class="nc" id="L67">		super.mouseClicked(e);</span>
+<span class="nc" id="L68">	}</span>
+
+	private void edit() {
+<span class="nc" id="L71">		JTextArea textArea = new JTextArea(getEquation());</span>
+<span class="nc" id="L72">		textArea.setLineWrap(true);</span>
+<span class="nc" id="L73">		textArea.setWrapStyleWord(true);</span>
+<span class="nc" id="L74">		final JScrollPane editorScrollPane = new JScrollPane(textArea);</span>
+<span class="nc" id="L75">		editorScrollPane</span>
+<span class="nc" id="L76">				.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);</span>
+<span class="nc" id="L77">		editorScrollPane.setPreferredSize(new Dimension(500, 160));</span>
+<span class="nc" id="L78">		JDialog edit = new JDialog(JOptionPane.getFrameForComponent(this),</span>
+<span class="nc" id="L79">				editorTitle, true);</span>
+<span class="nc" id="L80">		edit.getContentPane().add(editorScrollPane);</span>
+<span class="nc" id="L81">		edit.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);</span>
+<span class="nc" id="L82">		edit.pack();</span>
+<span class="nc" id="L83">		edit.setLocationRelativeTo(this);</span>
+<span class="nc" id="L84">		edit.setVisible(true);</span>
+<span class="nc" id="L85">		String eq = textArea.getText();</span>
+<span class="nc" id="L86">		model.setContent(null, eq);</span>
+<span class="nc" id="L87">	}</span>
+
+	public void setModel(LatexNodeHook model) {
+<span class="nc" id="L90">		this.model = model;</span>
+<span class="nc" id="L91">		setEquation(model.getContent(null));</span>
+<span class="nc" id="L92">		revalidate();</span>
+<span class="nc" id="L93">		repaint();</span>
+<span class="nc" id="L94">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span>FreeMind_integration (Aug 16, 2014 2:28:58 PM)</div></body></html>

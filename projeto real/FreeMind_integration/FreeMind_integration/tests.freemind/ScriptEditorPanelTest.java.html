@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../.resources/report.gif" type="image/gif"/><title>ScriptEditorPanelTest.java</title><link rel="stylesheet" href="../../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../.sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FreeMind_integration (Aug 16, 2014 3:57:47 PM)</a> &gt; <a href="../../index.html" class="el_group">FreeMind_integration</a> &gt; <a href="../index.html" class="el_bundle">FreeMind_integration</a> &gt; <a href="index.source.html" class="el_package">tests.freemind</a> &gt; <span class="el_source">ScriptEditorPanelTest.java</span></div><h1>ScriptEditorPanelTest.java</h1><pre class="source lang-java linenums">/*FreeMind - A Program for creating and viewing Mindmaps
+ *Copyright (C) 2000-2007  Joerg Mueller, Daniel Polansky, Dimitri Polivaev, Christian Foltin and others.
+ *
+ *See COPYING for Details
+ *
+ *This program is free software; you can redistribute it and/or
+ *modify it under the terms of the GNU General Public License
+ *as published by the Free Software Foundation; either version 2
+ *of the License, or (at your option) any later version.
+ *
+ *This program is distributed in the hope that it will be useful,
+ *but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *GNU General Public License for more details.
+ *
+ *You should have received a copy of the GNU General Public License
+ *along with this program; if not, write to the Free Software
+ *Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ *
+ * Created on 22.01.2007
+ */
+/*$Id: ScriptEditorPanelTest.java,v 1.1.2.7 2008/01/17 20:27:41 christianfoltin Exp $*/
+package tests.freemind;
+
+import freemind.controller.actions.generated.instance.ScriptEditorWindowConfigurationStorage;
+import groovy.lang.Binding;
+import groovy.lang.GroovyShell;
+
+import java.awt.Dimension;
+import java.io.PrintStream;
+
+import plugins.script.ScriptEditorPanel;
+import plugins.script.ScriptEditorPanel.ScriptHolder;
+import plugins.script.ScriptEditorPanel.ScriptModel;
+import plugins.script.ScriptingEngine;
+import plugins.script.ScriptingEngine.ErrorHandler;
+
+/**
+ * @author foltin
+ * 
+ */
+<span class="fc" id="L42">public class ScriptEditorPanelTest extends FreeMindTestBase {</span>
+
+<span class="nc" id="L44">	private static final class TestScriptModel implements ScriptModel {</span>
+<span class="nc" id="L45">		String[] scripts = {</span>
+<span class="nc" id="L46">				&quot;j=0;\nfor(i in (0..6))\n	{\n		j+=i; \n		print i;\n	}; \nreturn j;\n&quot;,</span>
+<span class="nc" id="L47">				&quot;for(i=0;i&lt;5;++i){print i;}&quot; };</span>
+
+		public int getAmountOfScripts() {
+			// TODO Auto-generated method stub
+<span class="nc" id="L51">			return 2;</span>
+		}
+
+		public ScriptHolder getScript(int pIndex) {
+<span class="nc" id="L55">			return new ScriptHolder(&quot;script&quot; + pIndex, scripts[pIndex]);</span>
+		}
+
+		public void setScript(int pIndex, ScriptHolder pScript) {
+<span class="nc" id="L59">			scripts[pIndex] = pScript.getScript();</span>
+<span class="nc" id="L60">		}</span>
+
+		public boolean executeScript(int pIndex, PrintStream outStream,
+				ErrorHandler pErrorHandler) {
+<span class="nc" id="L64">			Binding binding = new Binding();</span>
+<span class="nc" id="L65">			binding.setVariable(&quot;c&quot;, null);</span>
+<span class="nc" id="L66">			binding.setVariable(&quot;node&quot;, null);</span>
+<span class="nc" id="L67">			GroovyShell shell = new GroovyShell(binding);</span>
+
+<span class="nc" id="L69">			String script = getScript(pIndex).getScript();</span>
+			// redirect output:
+<span class="nc" id="L71">			PrintStream oldOut = System.out;</span>
+			Object value;
+			try {
+<span class="nc" id="L74">				System.setOut(outStream);</span>
+<span class="nc" id="L75">				value = shell.evaluate(script);</span>
+<span class="nc" id="L76">			} finally {</span>
+<span class="nc" id="L77">				System.setOut(oldOut);</span>
+<span class="nc" id="L78">			}</span>
+<span class="nc" id="L79">			return true;</span>
+		}
+
+		public void storeDialogPositions(ScriptEditorPanel pPanel,
+				ScriptEditorWindowConfigurationStorage pStorage,
+				String pWindow_preference_storage_property) {
+			// TODO Auto-generated method stub
+
+<span class="nc" id="L87">		}</span>
+
+		public ScriptEditorWindowConfigurationStorage decorateDialog(
+				ScriptEditorPanel pPanel,
+				String pWindow_preference_storage_property) {
+<span class="nc" id="L92">			ScriptEditorWindowConfigurationStorage storage = new ScriptEditorWindowConfigurationStorage();</span>
+<span class="nc" id="L93">			storage.setHeight(800);</span>
+<span class="nc" id="L94">			storage.setWidth(400);</span>
+<span class="nc" id="L95">			pPanel.getRootPane().setPreferredSize(</span>
+<span class="nc" id="L96">					new Dimension(storage.getWidth(), storage.getHeight()));</span>
+<span class="nc" id="L97">			storage.setLeftRatio(100);</span>
+<span class="nc" id="L98">			storage.setTopRatio(500);</span>
+<span class="nc" id="L99">			return storage;</span>
+		}
+
+		public void endDialog(boolean pIsCanceled) {
+<span class="nc" id="L103">		}</span>
+
+		public boolean isDirty() {
+<span class="nc" id="L106">			return true;</span>
+		}
+
+		public int addNewScript() {
+<span class="nc" id="L110">			return 0;</span>
+		}
+	}
+
+	public void _testPanel() {
+<span class="nc" id="L115">		ScriptEditorPanel scriptEditor = new ScriptEditorPanel(</span>
+<span class="nc" id="L116">				new TestScriptModel(), new FreeMindMainMock(), true);</span>
+<span class="nc" id="L117">		scriptEditor.setVisible(true);</span>
+<span class="nc" id="L118">	}</span>
+
+	public void testErrorLineNumbers() throws Exception {
+<span class="fc" id="L121">		String error = &quot;startup failed, Script1.groovy: 1: For statement contains unexpected tokens. Possible attempt to use unsupported Java-style for loop. at line: 1 column: 1. File: Script1.groovy @ line 1, column 1.\n1 error&quot;;</span>
+<span class="fc" id="L122">		assertEquals(&quot;find right line number&quot;, 1,</span>
+<span class="fc" id="L123">				ScriptingEngine.findLineNumberInString(error, -1));</span>
+<span class="fc" id="L124">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span>FreeMind_integration (Aug 16, 2014 3:57:47 PM)</div></body></html>

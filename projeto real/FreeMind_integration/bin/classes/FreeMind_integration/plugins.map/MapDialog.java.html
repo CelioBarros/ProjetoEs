@@ -1,0 +1,1048 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../.resources/report.gif" type="image/gif"/><title>MapDialog.java</title><link rel="stylesheet" href="../../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../.sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FreeMind_integration (Aug 16, 2014 2:28:58 PM)</a> &gt; <a href="../../index.html" class="el_group">FreeMind_integration</a> &gt; <a href="../index.html" class="el_bundle">FreeMind_integration</a> &gt; <a href="index.source.html" class="el_package">plugins.map</a> &gt; <span class="el_source">MapDialog.java</span></div><h1>MapDialog.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package plugins.map;</span>
+
+//License: GPL. Copyright 2008 by Jan Peter Stotz
+
+import java.awt.AWTEvent;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.Vector;
+
+import javax.swing.AbstractAction;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.WindowConstants;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.table.AbstractTableModel;
+
+import org.openstreetmap.gui.jmapviewer.Coordinate;
+import org.openstreetmap.gui.jmapviewer.JMapViewer;
+import org.openstreetmap.gui.jmapviewer.OsmMercator;
+import org.openstreetmap.gui.jmapviewer.OsmTileLoader;
+import org.openstreetmap.gui.jmapviewer.events.JMVCommandEvent;
+import org.openstreetmap.gui.jmapviewer.interfaces.JMapViewerEventListener;
+import org.openstreetmap.gui.jmapviewer.tilesources.OsmTileSource.Mapnik;
+
+import plugins.map.FreeMindMapController.CursorPositionListener;
+import plugins.map.MapNodePositionHolder.MapNodePositionListener;
+import plugins.map.Registration.NodeVisibilityListener;
+import accessories.plugins.time.TableSorter;
+import freemind.common.TextTranslator;
+import freemind.controller.MapModuleManager.MapModuleChangeObserver;
+import freemind.controller.actions.generated.instance.MapLocationStorage;
+import freemind.controller.actions.generated.instance.MapWindowConfigurationStorage;
+import freemind.controller.actions.generated.instance.Place;
+import freemind.controller.actions.generated.instance.TableColumnSetting;
+import freemind.main.Resources;
+import freemind.main.Tools;
+import freemind.modes.MindMapNode;
+import freemind.modes.Mode;
+import freemind.modes.ModeController.NodeSelectionListener;
+import freemind.modes.mindmapmode.MindMapController;
+import freemind.modes.mindmapmode.hooks.MindMapHookAdapter;
+import freemind.view.MapModule;
+import freemind.view.mindmapview.NodeView;
+
+/**
+ * 
+ * Demonstrates the usage of {@link JMapViewer}
+ * 
+ * @author Jan Peter Stotz adapted for FreeMind by Chris.
+ */
+<span class="nc" id="L77">public class MapDialog extends MindMapHookAdapter implements</span>
+		JMapViewerEventListener, MapModuleChangeObserver,
+		MapNodePositionListener, NodeSelectionListener, NodeVisibilityListener {
+
+<span class="nc" id="L81">	private static final String WINDOW_PREFERENCE_STORAGE_PROPERTY = MapDialog.class</span>
+<span class="nc" id="L82">			.getName();</span>
+
+	static final String TILE_CACHE_CLASS = &quot;tile_cache_class&quot;;
+
+	static final String FILE_TILE_CACHE_DIRECTORY = &quot;file_tile_cache_directory&quot;;
+
+	public static final String TILE_CACHE_MAX_AGE = &quot;tile_cache_max_age&quot;;
+
+	private static final int SEARCH_DESCRIPTION_COLUMN = 0;
+
+	public static final int SEARCH_DISTANCE_COLUMN = 1;
+
+<span class="nc" id="L94">	private JCursorMapViewer map = null;</span>
+
+<span class="nc" id="L96">	private JLabel zoomValue = null;</span>
+
+<span class="nc" id="L98">	private JLabel mperpLabelValue = null;</span>
+
+	private MindMapController mMyMindMapController;
+
+	private JDialog mMapDialog;
+
+<span class="nc" id="L104">	private HashMap /* &lt; MapNodePositionHolder, MapMarkerLocation &gt; */mMarkerMap = new HashMap();</span>
+
+	private CloseAction mCloseAction;
+
+	private JPanel mSearchFieldPanel;
+
+	private JSplitPane mSearchSplitPane;
+
+	private boolean mSearchBarVisible;
+
+	private JPanel mSearchPanel;
+
+	private JTextField mSearchTerm;
+
+	static final String MAP_HOOK_NAME = &quot;plugins/map/MapDialog.properties&quot;;
+
+	public static final String TILE_CACHE_PURGE_TIME = &quot;tile_cache_purge_time&quot;;
+
+	public static final long TILE_CACHE_PURGE_TIME_DEFAULT = 1000 * 60 * 10;
+
+	private static final String SEARCH_DESCRIPTION_COLUMN_TEXT = &quot;plugins/map/MapDialog.Description&quot;;
+
+<span class="nc" id="L126">	private static final String SEARCH_DISTANCE_COLUMN_TEXT = &quot;plugins/map/MapDialog.Distance&quot;;</span>
+
+	private JLabel mStatusLabel;
+
+	/**
+	 * Indicates that after a search, when a place was selected, the search
+	 * dialog should close
+	 */
+<span class="nc" id="L134">	private boolean mSingleSearch = false;</span>
+
+	private JTable mResultTable;
+
+	private ResultTableModel mResultTableModel;
+
+	private TableSorter mResultTableSorter;
+
+	private Color mTableOriginalBackgroundColor;
+
+	/**
+	 * I know, that the JSplitPane collects this information, but I want to
+	 * handle it here.
+	 */
+<span class="nc" id="L148">	private int mLastDividerPosition = 300;</span>
+
+<span class="nc" id="L150">	private boolean mLimitSearchToRegion = false;</span>
+
+	private JLabel mSearchStringLabel;
+
+	private String mResourceSearchLocationString;
+
+	private String mResourceSearchString;
+
+	private final class CloseAction extends AbstractAction {
+
+<span class="nc" id="L160">		public CloseAction() {</span>
+<span class="nc" id="L161">			super(getResourceString(&quot;MapDialog_close&quot;));</span>
+<span class="nc" id="L162">		}</span>
+
+		public void actionPerformed(ActionEvent arg0) {
+<span class="nc" id="L165">			disposeDialog();</span>
+<span class="nc" id="L166">		}</span>
+	}
+
+	/**
+	 * @author foltin
+	 * @date 25.04.2012
+	 */
+	public final class ResultTableModel extends AbstractTableModel implements
+			CursorPositionListener {
+		/**
+		 * 
+		 */
+<span class="nc" id="L178">		private final String[] COLUMNS = new String[] {</span>
+<span class="nc" id="L179">				SEARCH_DESCRIPTION_COLUMN_TEXT, SEARCH_DISTANCE_COLUMN_TEXT };</span>
+<span class="nc" id="L180">		Vector mData = new Vector();</span>
+<span class="nc" id="L181">		private Coordinate mCursorCoordinate = new Coordinate(0, 0);</span>
+<span class="nc" id="L182">		private HashMap mMapSearchMarkerLocationHash = new HashMap();</span>
+		private final TextTranslator mTextTranslator;
+
+		/**
+		 * @param pCursorCoordinate
+		 */
+		public ResultTableModel(Coordinate pCursorCoordinate,
+<span class="nc" id="L189">				TextTranslator pTextTranslator) {</span>
+<span class="nc" id="L190">			super();</span>
+<span class="nc" id="L191">			mCursorCoordinate = pCursorCoordinate;</span>
+<span class="nc" id="L192">			mTextTranslator = pTextTranslator;</span>
+<span class="nc" id="L193">		}</span>
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see javax.swing.table.AbstractTableModel#getColumnClass(int)
+		 */
+		public Class getColumnClass(int arg0) {
+<span class="nc bnc" id="L201" title="All 3 branches missed.">			switch (arg0) {</span>
+			case SEARCH_DESCRIPTION_COLUMN:
+<span class="nc" id="L203">				return String.class;</span>
+			case SEARCH_DISTANCE_COLUMN:
+<span class="nc" id="L205">				return Double.class;</span>
+			default:
+<span class="nc" id="L207">				return Object.class;</span>
+			}
+		}
+
+		/**
+		 * @param pPlace
+		 */
+		public void addPlace(Place pPlace) {
+<span class="nc" id="L215">			mData.add(pPlace);</span>
+<span class="nc" id="L216">			final int row = mData.size() - 1;</span>
+<span class="nc" id="L217">			MapSearchMarkerLocation location = new MapSearchMarkerLocation(</span>
+<span class="nc" id="L218">					MapDialog.this, pPlace);</span>
+<span class="nc" id="L219">			mMapSearchMarkerLocationHash.put(pPlace, location);</span>
+<span class="nc" id="L220">			getMap().addMapMarker(location);</span>
+<span class="nc" id="L221">			fireTableRowsInserted(row, row);</span>
+<span class="nc" id="L222">		}</span>
+
+		public MapSearchMarkerLocation getMapSearchMarkerLocation(int index) {
+<span class="nc bnc" id="L225" title="All 4 branches missed.">			if (index &gt;= 0 &amp;&amp; index &lt; getRowCount()) {</span>
+<span class="nc" id="L226">				Place place = getPlace(index);</span>
+<span class="nc" id="L227">				return (MapSearchMarkerLocation) mMapSearchMarkerLocationHash</span>
+<span class="nc" id="L228">						.get(place);</span>
+			}
+<span class="nc" id="L230">			throw new IllegalArgumentException(&quot;Index &quot; + index</span>
+<span class="nc" id="L231">					+ &quot; is out of range.&quot;);</span>
+		}
+
+		public Place getPlace(int pIndex) {
+<span class="nc" id="L235">			return (Place) mData.get(pIndex);</span>
+		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see javax.swing.table.AbstractTableModel#getColumnName(int)
+		 */
+		public String getColumnName(int pColumn) {
+<span class="nc" id="L244">			return mTextTranslator.getText(COLUMNS[pColumn]);</span>
+		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see javax.swing.table.TableModel#getRowCount()
+		 */
+		public int getRowCount() {
+<span class="nc" id="L253">			return mData.size();</span>
+		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see javax.swing.table.TableModel#getColumnCount()
+		 */
+		public int getColumnCount() {
+<span class="nc" id="L262">			return 2;</span>
+		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see javax.swing.table.TableModel#getValueAt(int, int)
+		 */
+		public Object getValueAt(int pRowIndex, int pColumnIndex) {
+<span class="nc" id="L271">			final Place place = getPlace(pRowIndex);</span>
+<span class="nc bnc" id="L272" title="All 3 branches missed.">			switch (pColumnIndex) {</span>
+			case SEARCH_DISTANCE_COLUMN:
+<span class="nc" id="L274">				final double value = OsmMercator.getDistance(</span>
+<span class="nc" id="L275">						mCursorCoordinate.getLat(), mCursorCoordinate.getLon(),</span>
+<span class="nc" id="L276">						place.getLat(), place.getLon()) / 1000.0;</span>
+<span class="nc bnc" id="L277" title="All 4 branches missed.">				if (Double.isInfinite(value) || Double.isNaN(value)) {</span>
+<span class="nc" id="L278">					return Double.valueOf(-1.0);</span>
+				}
+<span class="nc" id="L280">				return new Double(value);</span>
+			case SEARCH_DESCRIPTION_COLUMN:
+<span class="nc" id="L282">				return place.getDisplayName();</span>
+			}
+<span class="nc" id="L284">			return null;</span>
+		}
+
+		/**
+		 * 
+		 */
+		public void clear() {
+			// clear old search results:
+<span class="nc" id="L292">			for (Iterator it = mMapSearchMarkerLocationHash.keySet().iterator(); it</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">					.hasNext();) {</span>
+<span class="nc" id="L294">				Place place = (Place) it.next();</span>
+<span class="nc" id="L295">				MapSearchMarkerLocation location = (MapSearchMarkerLocation) mMapSearchMarkerLocationHash</span>
+<span class="nc" id="L296">						.get(place);</span>
+<span class="nc" id="L297">				getMap().removeMapMarker(location);</span>
+			}
+<span class="nc" id="L299">			mMapSearchMarkerLocationHash.clear();</span>
+<span class="nc" id="L300">			mData.clear();</span>
+<span class="nc" id="L301">			fireTableDataChanged();</span>
+<span class="nc" id="L302">		}</span>
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see plugins.map.FreeMindMapController.CursorPositionListener#
+		 * cursorPositionChanged(org.openstreetmap.gui.jmapviewer.Coordinate)
+		 */
+		public void cursorPositionChanged(Coordinate pCursorPosition) {
+<span class="nc" id="L311">			mCursorCoordinate = pCursorPosition;</span>
+<span class="nc" id="L312">			fireTableDataChanged();</span>
+<span class="nc" id="L313">		}</span>
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see freemind.extensions.HookAdapter#startupMapHook()
+	 */
+	public void startupMapHook() {
+<span class="nc" id="L322">		super.startupMapHook();</span>
+<span class="nc" id="L323">		mMyMindMapController = super.getMindMapController();</span>
+<span class="nc" id="L324">		getMindMapController().getController().getMapModuleManager()</span>
+<span class="nc" id="L325">				.addListener(this);</span>
+<span class="nc" id="L326">		mMapDialog = new JDialog(getController().getFrame().getJFrame(), false /* unmodal */);</span>
+<span class="nc" id="L327">		mMapDialog.setTitle(getResourceString(&quot;MapDialog_title&quot;));</span>
+<span class="nc" id="L328">		mMapDialog</span>
+<span class="nc" id="L329">				.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);</span>
+<span class="nc" id="L330">		mMapDialog.addWindowListener(new WindowAdapter() {</span>
+			public void windowClosing(WindowEvent event) {
+<span class="nc" id="L332">				disposeDialog();</span>
+<span class="nc" id="L333">			}</span>
+		});
+<span class="nc" id="L335">		mCloseAction = new CloseAction();</span>
+		// the action title is changed by the following method, thus we create
+		// another close action.
+<span class="nc" id="L338">		Tools.addEscapeActionToDialog(mMapDialog, new CloseAction());</span>
+<span class="nc" id="L339">		mMapDialog.setSize(400, 400);</span>
+
+<span class="nc" id="L341">		map = new JCursorMapViewer(getMindMapController(), mMapDialog,</span>
+<span class="nc" id="L342">				getRegistration().getTileCache(), this);</span>
+<span class="nc" id="L343">		map.addJMVListener(this);</span>
+<span class="nc" id="L344">		map.setScrollWrapEnabled(true);</span>
+<span class="nc" id="L345">		FreeMindMapController.changeTileSource(Mapnik.class.getName(), map);</span>
+<span class="nc" id="L346">		OsmTileLoader loader = getRegistration().createTileLoader(map);</span>
+<span class="nc" id="L347">		map.setTileLoader(loader);</span>
+<span class="nc" id="L348">		map.setCursorPosition(new Coordinate(49.8, 8.8));</span>
+<span class="nc" id="L349">		map.setUseCursor(true);</span>
+
+<span class="nc" id="L351">		mMapDialog.setLayout(new BorderLayout());</span>
+<span class="nc" id="L352">		mSearchPanel = new JPanel(new BorderLayout());</span>
+<span class="nc" id="L353">		mResourceSearchString = getResourceString(&quot;MapDialog_Search&quot;);</span>
+<span class="nc" id="L354">		mResourceSearchLocationString = getResourceString(&quot;MapDialog_Search_Location&quot;);</span>
+<span class="nc" id="L355">		mSearchStringLabel = new JLabel(mResourceSearchString);</span>
+<span class="nc" id="L356">		mSearchTerm = new JTextField();</span>
+<span class="nc" id="L357">		mSearchTerm.addKeyListener(new KeyAdapter() {</span>
+			public void keyPressed(KeyEvent pEvent) {
+<span class="nc bnc" id="L359" title="All 2 branches missed.">				if (pEvent.getKeyCode() == KeyEvent.VK_DOWN</span>
+<span class="nc bnc" id="L360" title="All 2 branches missed.">						&amp;&amp; pEvent.getModifiers() == 0) {</span>
+<span class="nc" id="L361">					logger.info(&quot;Set Focus to search list.&quot;);</span>
+<span class="nc" id="L362">					mResultTable.requestFocusInWindow();</span>
+<span class="nc" id="L363">					mResultTable.getSelectionModel().setSelectionInterval(0, 0);</span>
+<span class="nc" id="L364">					pEvent.consume();</span>
+				}
+<span class="nc" id="L366">			}</span>
+		});
+<span class="nc" id="L368">		mSearchFieldPanel = new JPanel();</span>
+<span class="nc" id="L369">		mSearchFieldPanel.setLayout(new BorderLayout(10, 0));</span>
+<span class="nc" id="L370">		JButton clearButton = new JButton(new ImageIcon(Resources.getInstance()</span>
+<span class="nc" id="L371">				.getResource(&quot;images/clear_box.png&quot;)));</span>
+<span class="nc" id="L372">		clearButton.setFocusable(false);</span>
+<span class="nc" id="L373">		mSearchFieldPanel.add(mSearchStringLabel, BorderLayout.WEST);</span>
+<span class="nc" id="L374">		mSearchFieldPanel.add(mSearchTerm, BorderLayout.CENTER);</span>
+<span class="nc" id="L375">		mSearchFieldPanel.add(clearButton, BorderLayout.EAST);</span>
+<span class="nc" id="L376">		mResultTable = new JTable();</span>
+<span class="nc" id="L377">		mTableOriginalBackgroundColor = mResultTable.getBackground();</span>
+
+<span class="nc" id="L379">		mResultTable</span>
+<span class="nc" id="L380">				.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);</span>
+<span class="nc" id="L381">		mResultTable.addKeyListener(new KeyAdapter() {</span>
+			public void keyPressed(KeyEvent pEvent) {
+<span class="nc" id="L383">				int index = mResultTable.getSelectedRow();</span>
+<span class="nc bnc" id="L384" title="All 4 branches missed.">				if (index == 0 &amp;&amp; pEvent.getKeyCode() == KeyEvent.VK_UP</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">						&amp;&amp; pEvent.getModifiers() == 0) {</span>
+<span class="nc" id="L386">					logger.info(&quot;Set Focus to search item.&quot;);</span>
+<span class="nc" id="L387">					mResultTable.clearSelection();</span>
+<span class="nc" id="L388">					mSearchTerm.requestFocusInWindow();</span>
+<span class="nc" id="L389">					pEvent.consume();</span>
+<span class="nc" id="L390">					return;</span>
+				}
+<span class="nc bnc" id="L392" title="All 2 branches missed.">				if (pEvent.getKeyCode() == KeyEvent.VK_ENTER</span>
+<span class="nc bnc" id="L393" title="All 4 branches missed.">						&amp;&amp; pEvent.getModifiers() == 0 &amp;&amp; index &gt;= 0) {</span>
+<span class="nc" id="L394">					logger.info(&quot;Set result in map.&quot;);</span>
+<span class="nc" id="L395">					pEvent.consume();</span>
+<span class="nc" id="L396">					displaySearchItem(index);</span>
+<span class="nc" id="L397">					return;</span>
+				}
+<span class="nc bnc" id="L399" title="All 2 branches missed.">				if (pEvent.getKeyCode() == KeyEvent.VK_ENTER</span>
+<span class="nc bnc" id="L400" title="All 4 branches missed.">						&amp;&amp; pEvent.isControlDown() &amp;&amp; index &gt;= 0) {</span>
+<span class="nc" id="L401">					pEvent.consume();</span>
+<span class="nc" id="L402">					addSearchResultsToMap();</span>
+<span class="nc" id="L403">					displaySearchItem(index);</span>
+<span class="nc" id="L404">					return;</span>
+				}
+
+<span class="nc" id="L407">			}</span>
+		});
+<span class="nc" id="L409">		mResultTable.getSelectionModel().addListSelectionListener(</span>
+<span class="nc" id="L410">				new ListSelectionListener() {</span>
+
+					public void valueChanged(ListSelectionEvent pE) {
+<span class="nc" id="L413">						clearIndexes();</span>
+<span class="nc" id="L414">						final int selectedRow = mResultTable.getSelectedRow();</span>
+<span class="nc bnc" id="L415" title="All 2 branches missed.">						if (selectedRow &gt;= 0</span>
+<span class="nc" id="L416">								&amp;&amp; selectedRow &lt; mResultTableSorter</span>
+<span class="nc bnc" id="L417" title="All 2 branches missed.">										.getRowCount()) {</span>
+<span class="nc" id="L418">							int index = selectedRow;</span>
+<span class="nc" id="L419">							index = mResultTableSorter.modelIndex(index);</span>
+<span class="nc" id="L420">							MapSearchMarkerLocation marker = mResultTableModel</span>
+<span class="nc" id="L421">									.getMapSearchMarkerLocation(index);</span>
+<span class="nc" id="L422">							marker.setSelected(true);</span>
+						}
+<span class="nc" id="L424">						mResultTable.repaint();</span>
+<span class="nc" id="L425">						getMap().repaint();</span>
+<span class="nc" id="L426">					}</span>
+
+					private void clearIndexes() {
+<span class="nc bnc" id="L429" title="All 2 branches missed.">						for (int i = 0; i &lt; mResultTableModel.getRowCount(); i++) {</span>
+<span class="nc" id="L430">							MapSearchMarkerLocation marker = mResultTableModel</span>
+<span class="nc" id="L431">									.getMapSearchMarkerLocation(i);</span>
+<span class="nc" id="L432">							marker.setSelected(false);</span>
+						}
+<span class="nc" id="L434">					}</span>
+				});
+<span class="nc" id="L436">		mResultTable.getTableHeader().setReorderingAllowed(false);</span>
+<span class="nc" id="L437">		mResultTableModel = new ResultTableModel(getMap().getCursorPosition(),</span>
+<span class="nc" id="L438">				getMindMapController());</span>
+<span class="nc" id="L439">		getFreeMindMapController().addCursorPositionListener(mResultTableModel);</span>
+<span class="nc" id="L440">		mResultTableSorter = new TableSorter(mResultTableModel);</span>
+<span class="nc" id="L441">		mResultTable.setModel(mResultTableSorter);</span>
+<span class="nc" id="L442">		mResultTableSorter.setTableHeader(mResultTable.getTableHeader());</span>
+<span class="nc" id="L443">		mResultTableSorter.setColumnComparator(String.class,</span>
+<span class="nc" id="L444">				TableSorter.LEXICAL_COMPARATOR);</span>
+<span class="nc" id="L445">		mResultTableSorter.setColumnComparator(Double.class,</span>
+<span class="nc" id="L446">				TableSorter.COMPARABLE_COMAPRATOR);</span>
+		// Sort by default by date.
+<span class="nc" id="L448">		mResultTableSorter.setSortingStatus(SEARCH_DISTANCE_COLUMN,</span>
+<span class="nc" id="L449">				TableSorter.ASCENDING);</span>
+
+<span class="nc" id="L451">		clearButton.addActionListener(new ActionListener() {</span>
+
+			public void actionPerformed(ActionEvent pE) {
+<span class="nc" id="L454">				mResultTableModel.clear();</span>
+<span class="nc" id="L455">				mSearchTerm.setText(&quot;&quot;);</span>
+<span class="nc" id="L456">				mResultTable.setBackground(mTableOriginalBackgroundColor);</span>
+<span class="nc" id="L457">			}</span>
+		});
+<span class="nc" id="L459">		MouseListener mouseListener = new MouseAdapter() {</span>
+			public void mouseClicked(MouseEvent e) {
+<span class="nc bnc" id="L461" title="All 2 branches missed.">				if (e.getClickCount() == 2) {</span>
+					// int index = mResultTable.locationToIndex(e.getPoint());
+<span class="nc" id="L463">					int index = mResultTable.getSelectedRow();</span>
+<span class="nc" id="L464">					displaySearchItem(index);</span>
+				}
+<span class="nc" id="L466">			}</span>
+		};
+<span class="nc" id="L468">		mResultTable.addMouseListener(mouseListener);</span>
+
+<span class="nc" id="L470">		mSearchTerm.addActionListener(new ActionListener() {</span>
+
+			public void actionPerformed(ActionEvent pE) {
+<span class="nc" id="L473">				search(mSearchTerm.getText(), false);</span>
+<span class="nc" id="L474">			}</span>
+		});
+<span class="nc" id="L476">		final JScrollPane resultTableScrollPane = new JScrollPane(mResultTable);</span>
+<span class="nc" id="L477">		mSearchPanel.setLayout(new BorderLayout());</span>
+<span class="nc" id="L478">		mSearchPanel.add(mSearchFieldPanel, BorderLayout.NORTH);</span>
+<span class="nc" id="L479">		mSearchPanel.add(resultTableScrollPane, BorderLayout.CENTER);</span>
+<span class="nc" id="L480">		mSearchBarVisible = true;</span>
+<span class="nc" id="L481">		mSearchSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,</span>
+<span class="nc" id="L482">				mSearchPanel, map);</span>
+<span class="nc" id="L483">		mSearchSplitPane.setContinuousLayout(true);</span>
+<span class="nc" id="L484">		mSearchSplitPane.setOneTouchExpandable(false);</span>
+<span class="nc" id="L485">		Tools.correctJSplitPaneKeyMap();</span>
+<span class="nc" id="L486">		mSearchSplitPane.setResizeWeight(0d);</span>
+<span class="nc" id="L487">		mSearchSplitPane.addPropertyChangeListener(</span>
+<span class="nc" id="L488">				JSplitPane.DIVIDER_LOCATION_PROPERTY,</span>
+<span class="nc" id="L489">				new PropertyChangeListener() {</span>
+
+					public void propertyChange(PropertyChangeEvent pEvt) {
+<span class="nc" id="L492">						final int dividerLocation = mSearchSplitPane</span>
+<span class="nc" id="L493">								.getDividerLocation();</span>
+<span class="nc bnc" id="L494" title="All 2 branches missed.">						if (dividerLocation &gt; 1) {</span>
+<span class="nc" id="L495">							mLastDividerPosition = dividerLocation;</span>
+<span class="nc" id="L496">							logger.info(&quot;Setting last divider to &quot;</span>
+<span class="nc" id="L497">									+ mLastDividerPosition);</span>
+						}
+<span class="nc" id="L499">					}</span>
+				});
+<span class="nc" id="L501">		mMapDialog.add(mSearchSplitPane, BorderLayout.CENTER);</span>
+<span class="nc" id="L502">		mStatusLabel = new JLabel(&quot; &quot;);</span>
+<span class="nc" id="L503">		mMapDialog.add(mStatusLabel, BorderLayout.SOUTH);</span>
+
+<span class="nc" id="L505">		getRegistration().registerMapNodePositionListener(this);</span>
+<span class="nc" id="L506">		getRegistration().registerNodeVisibilityListener(this);</span>
+<span class="nc" id="L507">		getMindMapController().registerNodeSelectionListener(this, true);</span>
+
+<span class="nc" id="L509">		mMapDialog.validate();</span>
+		// restore preferences:
+		// Retrieve window size and column positions.
+<span class="nc" id="L512">		MapWindowConfigurationStorage storage = (MapWindowConfigurationStorage) getMindMapController()</span>
+<span class="nc" id="L513">				.decorateDialog(mMapDialog, WINDOW_PREFERENCE_STORAGE_PROPERTY);</span>
+<span class="nc bnc" id="L514" title="All 2 branches missed.">		if (storage != null) {</span>
+<span class="nc" id="L515">			map.setZoomContolsVisible(storage.getZoomControlsVisible());</span>
+<span class="nc" id="L516">			map.setTileGridVisible(storage.getTileGridVisible());</span>
+<span class="nc" id="L517">			map.setMapMarkerVisible(storage.getShowMapMarker());</span>
+<span class="nc" id="L518">			map.setHideFoldedNodes(storage.getHideFoldedNodes());</span>
+<span class="nc" id="L519">			int column = 0;</span>
+<span class="nc" id="L520">			for (Iterator i = storage.getListTableColumnSettingList()</span>
+<span class="nc bnc" id="L521" title="All 2 branches missed.">					.iterator(); i.hasNext();) {</span>
+<span class="nc" id="L522">				TableColumnSetting setting = (TableColumnSetting) i.next();</span>
+<span class="nc" id="L523">				mResultTable.getColumnModel().getColumn(column)</span>
+<span class="nc" id="L524">						.setPreferredWidth(setting.getColumnWidth());</span>
+<span class="nc" id="L525">				mResultTableSorter.setSortingStatus(column,</span>
+<span class="nc" id="L526">						setting.getColumnSorting());</span>
+<span class="nc" id="L527">				column++;</span>
+			}
+			// default is false, so if true, toggle it.
+<span class="nc bnc" id="L530" title="All 2 branches missed.">			if (storage.getLimitSearchToVisibleArea()) {</span>
+<span class="nc" id="L531">				toggleLimitSearchToRegion();</span>
+			}
+<span class="nc bnc" id="L533" title="All 2 branches missed.">			if (!storage.getSearchControlVisible()) {</span>
+<span class="nc" id="L534">				toggleSearchBar();</span>
+			}
+<span class="nc" id="L536">			mLastDividerPosition = storage.getLastDividerPosition();</span>
+<span class="nc" id="L537">			mSearchSplitPane.setDividerLocation(mLastDividerPosition);</span>
+			// restore last map positions
+<span class="nc" id="L539">			final Vector positionHolderVector = getFreeMindMapController()</span>
+<span class="nc" id="L540">					.getPositionHolderVector();</span>
+<span class="nc" id="L541">			for (Iterator it = storage.getListMapLocationStorageList()</span>
+<span class="nc bnc" id="L542" title="All 2 branches missed.">					.iterator(); it.hasNext();) {</span>
+<span class="nc" id="L543">				MapLocationStorage location = (MapLocationStorage) it.next();</span>
+<span class="nc" id="L544">				positionHolderVector</span>
+<span class="nc" id="L545">						.add(new FreeMindMapController.PositionHolder(location</span>
+<span class="nc" id="L546">								.getCursorLatitude(), location</span>
+<span class="nc" id="L547">								.getCursorLongitude(), location.getZoom()));</span>
+			}
+<span class="nc" id="L549">			if (getFreeMindMapController().checkPositionHolderIndex(</span>
+<span class="nc bnc" id="L550" title="All 2 branches missed.">					storage.getMapLocationStorageIndex())) {</span>
+<span class="nc" id="L551">				getFreeMindMapController().setPositionHolderIndex(</span>
+<span class="nc" id="L552">						storage.getMapLocationStorageIndex());</span>
+			}
+			// TODO: Better would be to store these data per map.
+<span class="nc" id="L555">			map.setDisplayPositionByLatLon(storage.getMapCenterLatitude(),</span>
+<span class="nc" id="L556">					storage.getMapCenterLongitude(), storage.getZoom());</span>
+<span class="nc" id="L557">			final Coordinate position = new Coordinate(</span>
+<span class="nc" id="L558">					storage.getCursorLatitude(), storage.getCursorLongitude());</span>
+<span class="nc" id="L559">			getFreeMindMapController().setCursorPosition(position);</span>
+			FreeMindMapController
+<span class="nc" id="L561">					.changeTileSource(storage.getTileSource(), map);</span>
+		}
+<span class="nc" id="L563">		addMarkersToMap();</span>
+<span class="nc" id="L564">		mMapDialog.setVisible(true);</span>
+<span class="nc" id="L565">		getRegistration().setMapDialog(this);</span>
+<span class="nc" id="L566">	}</span>
+
+	public void addMarkersToMap() {
+		// add known markers to the map.
+<span class="nc" id="L570">		Set mapNodePositionHolders = getAllMapNodePositionHolders();</span>
+<span class="nc bnc" id="L571" title="All 2 branches missed.">		for (Iterator it = mapNodePositionHolders.iterator(); it.hasNext();) {</span>
+<span class="nc" id="L572">			MapNodePositionHolder nodePositionHolder = (MapNodePositionHolder) it</span>
+<span class="nc" id="L573">					.next();</span>
+<span class="nc bnc" id="L574" title="All 2 branches missed.">			boolean visible = !nodePositionHolder.hasFoldedParents();</span>
+<span class="nc" id="L575">			changeVisibilityOfNode(nodePositionHolder, visible);</span>
+		}
+
+<span class="nc" id="L578">	}</span>
+
+	protected void changeVisibilityOfNode(
+			MapNodePositionHolder nodePositionHolder, boolean pVisible) {
+<span class="nc bnc" id="L582" title="All 4 branches missed.">		if (!pVisible &amp;&amp; map.isHideFoldedNodes()) {</span>
+<span class="nc" id="L583">			removeMapMarker(nodePositionHolder);</span>
+<span class="nc" id="L584">		} else {</span>
+<span class="nc" id="L585">			addMapMarker(nodePositionHolder);</span>
+		}
+<span class="nc" id="L587">	}</span>
+
+	public Registration getRegistration() {
+<span class="nc" id="L590">		return (Registration) getPluginBaseClass();</span>
+	}
+
+	public void toggleSearchBar() {
+<span class="nc" id="L594">		mSingleSearch = false;</span>
+<span class="nc" id="L595">		toggleSearchBar(null);</span>
+<span class="nc" id="L596">	}</span>
+
+	public void toggleSearchBar(AWTEvent pEvent) {
+<span class="nc bnc" id="L599" title="All 2 branches missed.">		if (mSearchBarVisible) {</span>
+<span class="nc" id="L600">			mLastDividerPosition = mSearchSplitPane.getDividerLocation();</span>
+<span class="nc" id="L601">			logger.fine(&quot;Setting last divider to &quot; + mLastDividerPosition);</span>
+			// clear results
+<span class="nc" id="L603">			mResultTableModel.clear();</span>
+			// hide search bar
+<span class="nc" id="L605">			mSearchSplitPane.setBottomComponent(null);</span>
+<span class="nc" id="L606">			mMapDialog.remove(mSearchSplitPane);</span>
+<span class="nc" id="L607">			mMapDialog.add(map, BorderLayout.CENTER);</span>
+<span class="nc" id="L608">			mMapDialog.requestFocusInWindow();</span>
+<span class="nc" id="L609">			mSearchBarVisible = false;</span>
+<span class="nc" id="L610">		} else {</span>
+			// show search bar
+<span class="nc" id="L612">			mMapDialog.remove(map);</span>
+<span class="nc" id="L613">			mMapDialog.add(mSearchSplitPane, BorderLayout.CENTER);</span>
+<span class="nc" id="L614">			mSearchSplitPane.setBottomComponent(map);</span>
+<span class="nc" id="L615">			mSearchSplitPane.setDividerLocation(mLastDividerPosition);</span>
+<span class="nc" id="L616">			focusSearchTerm();</span>
+<span class="nc" id="L617">			mSearchBarVisible = true;</span>
+		}
+<span class="nc" id="L619">		mMapDialog.validate();</span>
+<span class="nc bnc" id="L620" title="All 2 branches missed.">		if (pEvent != null) {</span>
+<span class="nc" id="L621">			mSearchTerm.setText(&quot;&quot;);</span>
+<span class="nc" id="L622">			mSearchTerm.dispatchEvent(pEvent);</span>
+			/* Special for mac, as otherwise, everything is selected... GRRR. */
+<span class="nc bnc" id="L624" title="All 2 branches missed.">			if (Tools.isMacOsX()) {</span>
+<span class="nc" id="L625">				EventQueue.invokeLater(new Runnable() {</span>
+					public void run() {
+<span class="nc" id="L627">						mSearchTerm.setCaretPosition(mSearchTerm.getDocument()</span>
+<span class="nc" id="L628">								.getLength());</span>
+<span class="nc" id="L629">					}</span>
+				});
+			}
+		}
+<span class="nc" id="L633">	}</span>
+
+	protected void focusSearchTerm() {
+<span class="nc" id="L636">		mSearchTerm.selectAll();</span>
+<span class="nc" id="L637">		mSearchTerm.requestFocusInWindow();</span>
+<span class="nc" id="L638">	}</span>
+
+	/**
+	 * @return a set of MapNodePositionHolder elements of all nodes (even if
+	 *         hidden)
+	 */
+	public Set getAllMapNodePositionHolders() {
+<span class="nc" id="L645">		return getRegistration().getMapNodePositionHolders();</span>
+	}
+
+	/**
+	 * @return a set of MapNodePositionHolder elements to those nodes currently
+	 *         displayed (ie. not hidden).
+	 */
+	public Set getMapNodePositionHolders() {
+<span class="nc" id="L653">		return mMarkerMap.keySet();</span>
+	}
+
+	protected void addMapMarker(MapNodePositionHolder nodePositionHolder) {
+<span class="nc bnc" id="L657" title="All 2 branches missed.">		if (mMarkerMap.containsKey(nodePositionHolder)) {</span>
+			// already present.
+<span class="nc" id="L659">			logger.fine(&quot;Node &quot; + nodePositionHolder + &quot; already present.&quot;);</span>
+<span class="nc" id="L660">			return;</span>
+		}
+<span class="nc" id="L662">		Coordinate position = nodePositionHolder.getPosition();</span>
+<span class="nc" id="L663">		logger.fine(&quot;Adding map position for &quot; + nodePositionHolder.getNode()</span>
+<span class="nc" id="L664">				+ &quot; at &quot; + position);</span>
+<span class="nc" id="L665">		MapMarkerLocation marker = new MapMarkerLocation(nodePositionHolder,</span>
+<span class="nc" id="L666">				this);</span>
+<span class="nc" id="L667">		map.addMapMarker(marker);</span>
+<span class="nc" id="L668">		mMarkerMap.put(nodePositionHolder, marker);</span>
+<span class="nc" id="L669">	}</span>
+
+	protected void removeMapMarker(MapNodePositionHolder pMapNodePositionHolder) {
+<span class="nc" id="L672">		MapMarkerLocation marker = (MapMarkerLocation) mMarkerMap</span>
+<span class="nc" id="L673">				.remove(pMapNodePositionHolder);</span>
+<span class="nc bnc" id="L674" title="All 2 branches missed.">		if (marker != null) {</span>
+<span class="nc" id="L675">			map.removeMapMarker(marker);</span>
+		}
+<span class="nc" id="L677">	}</span>
+
+	/**
+	 * Overwritten, as this dialog is not modal, but after the plugin has
+	 * terminated, the dialog is still present and needs the controller to store
+	 * its values.
+	 * */
+	public MindMapController getMindMapController() {
+<span class="nc" id="L685">		return mMyMindMapController;</span>
+	}
+
+	public FreeMindMapController getFreeMindMapController() {
+<span class="nc" id="L689">		return map.getFreeMindMapController();</span>
+	}
+
+	/**
+	 * 
+	 */
+	public void disposeDialog() {
+<span class="nc" id="L696">		Registration registration = (Registration) getPluginBaseClass();</span>
+<span class="nc bnc" id="L697" title="All 2 branches missed.">		if (registration != null) {</span>
+			// on close, it is null. Why?
+<span class="nc" id="L699">			registration.setMapDialog(null);</span>
+<span class="nc" id="L700">			registration.deregisterMapNodePositionListener(this);</span>
+<span class="nc" id="L701">			registration.deregisterNodeVisibilityListener(this);</span>
+		}
+<span class="nc" id="L703">		getMindMapController().deregisterNodeSelectionListener(this);</span>
+
+		// store window positions:
+<span class="nc" id="L706">		MapWindowConfigurationStorage storage = new MapWindowConfigurationStorage();</span>
+		// Set coordinates
+<span class="nc" id="L708">		storage.setZoom(map.getZoom());</span>
+<span class="nc" id="L709">		Coordinate position = map.getPosition();</span>
+<span class="nc" id="L710">		storage.setMapCenterLongitude(position.getLon());</span>
+<span class="nc" id="L711">		storage.setMapCenterLatitude(position.getLat());</span>
+<span class="nc" id="L712">		Coordinate cursorPosition = map.getCursorPosition();</span>
+<span class="nc" id="L713">		storage.setCursorLongitude(cursorPosition.getLon());</span>
+<span class="nc" id="L714">		storage.setCursorLatitude(cursorPosition.getLat());</span>
+<span class="nc" id="L715">		storage.setTileSource(map.getTileController().getTileSource()</span>
+<span class="nc" id="L716">				.getClass().getName());</span>
+<span class="nc" id="L717">		storage.setTileGridVisible(map.isTileGridVisible());</span>
+<span class="nc" id="L718">		storage.setZoomControlsVisible(map.getZoomContolsVisible());</span>
+<span class="nc" id="L719">		storage.setShowMapMarker(map.getMapMarkersVisible());</span>
+<span class="nc" id="L720">		storage.setSearchControlVisible(mSearchBarVisible);</span>
+<span class="nc" id="L721">		storage.setLimitSearchToVisibleArea(mLimitSearchToRegion);</span>
+<span class="nc" id="L722">		storage.setHideFoldedNodes(map.isHideFoldedNodes());</span>
+<span class="nc" id="L723">		storage.setLastDividerPosition(mLastDividerPosition);</span>
+<span class="nc bnc" id="L724" title="All 2 branches missed.">		for (int i = 0; i &lt; mResultTable.getColumnCount(); i++) {</span>
+<span class="nc" id="L725">			TableColumnSetting setting = new TableColumnSetting();</span>
+<span class="nc" id="L726">			setting.setColumnWidth(mResultTable.getColumnModel().getColumn(i)</span>
+<span class="nc" id="L727">					.getWidth());</span>
+<span class="nc" id="L728">			setting.setColumnSorting(mResultTableSorter.getSortingStatus(i));</span>
+<span class="nc" id="L729">			storage.addTableColumnSetting(setting);</span>
+		}
+<span class="nc" id="L731">		for (Iterator it = getFreeMindMapController().getPositionHolderVector()</span>
+<span class="nc bnc" id="L732" title="All 2 branches missed.">				.iterator(); it.hasNext();) {</span>
+<span class="nc" id="L733">			FreeMindMapController.PositionHolder pos = (FreeMindMapController.PositionHolder) it</span>
+<span class="nc" id="L734">					.next();</span>
+<span class="nc" id="L735">			MapLocationStorage mapLocationStorage = new MapLocationStorage();</span>
+<span class="nc" id="L736">			mapLocationStorage.setCursorLatitude(pos.lat);</span>
+<span class="nc" id="L737">			mapLocationStorage.setCursorLongitude(pos.lon);</span>
+<span class="nc" id="L738">			mapLocationStorage.setZoom(pos.zoom);</span>
+<span class="nc" id="L739">			storage.addMapLocationStorage(mapLocationStorage);</span>
+		}
+<span class="nc" id="L741">		storage.setMapLocationStorageIndex(getFreeMindMapController()</span>
+<span class="nc" id="L742">				.getPositionHolderIndex());</span>
+<span class="nc" id="L743">		getMindMapController().storeDialogPositions(mMapDialog, storage,</span>
+<span class="nc" id="L744">				WINDOW_PREFERENCE_STORAGE_PROPERTY);</span>
+
+<span class="nc" id="L746">		getMindMapController().getController().getMapModuleManager()</span>
+<span class="nc" id="L747">				.removeListener(this);</span>
+<span class="nc" id="L748">		mMapDialog.setVisible(false);</span>
+<span class="nc" id="L749">		mMapDialog.dispose();</span>
+<span class="nc" id="L750">	}</span>
+
+	private void updateZoomParameters() {
+<span class="nc bnc" id="L753" title="All 2 branches missed.">		if (mperpLabelValue != null)</span>
+<span class="nc" id="L754">			mperpLabelValue.setText(format(&quot;%s&quot;, map.getMeterPerPixel()));</span>
+<span class="nc bnc" id="L755" title="All 2 branches missed.">		if (zoomValue != null)</span>
+<span class="nc" id="L756">			zoomValue.setText(format(&quot;%s&quot;, map.getZoom()));</span>
+<span class="nc" id="L757">	}</span>
+
+	/**
+	 * @param pString
+	 * @param pMeterPerPixel
+	 * @return
+	 */
+	private String format(String pString, double pObject) {
+<span class="nc" id="L765">		return &quot;&quot; + pObject;</span>
+	}
+
+	public void processCommand(JMVCommandEvent command) {
+<span class="nc bnc" id="L769" title="All 2 branches missed.">		if (command.getCommand().equals(JMVCommandEvent.COMMAND.ZOOM)</span>
+<span class="nc bnc" id="L770" title="All 2 branches missed.">				|| command.getCommand().equals(JMVCommandEvent.COMMAND.MOVE)) {</span>
+<span class="nc" id="L771">			updateZoomParameters();</span>
+		}
+<span class="nc" id="L773">	}</span>
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see freemind.controller.MapModuleManager.MapModuleChangeObserver#
+	 * isMapModuleChangeAllowed(freemind.view.MapModule, freemind.modes.Mode,
+	 * freemind.view.MapModule, freemind.modes.Mode)
+	 */
+	public boolean isMapModuleChangeAllowed(MapModule pOldMapModule,
+			Mode pOldMode, MapModule pNewMapModule, Mode pNewMode) {
+<span class="nc" id="L784">		return true;</span>
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see freemind.controller.MapModuleManager.MapModuleChangeObserver#
+	 * beforeMapModuleChange(freemind.view.MapModule, freemind.modes.Mode,
+	 * freemind.view.MapModule, freemind.modes.Mode)
+	 */
+	public void beforeMapModuleChange(MapModule pOldMapModule, Mode pOldMode,
+			MapModule pNewMapModule, Mode pNewMode) {
+<span class="nc" id="L796">	}</span>
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * freemind.controller.MapModuleManager.MapModuleChangeObserver#afterMapClose
+	 * (freemind.view.MapModule, freemind.modes.Mode)
+	 */
+	public void afterMapClose(MapModule pOldMapModule, Mode pOldMode) {
+<span class="nc" id="L806">		disposeDialog();</span>
+<span class="nc" id="L807">	}</span>
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see freemind.controller.MapModuleManager.MapModuleChangeObserver#
+	 * afterMapModuleChange(freemind.view.MapModule, freemind.modes.Mode,
+	 * freemind.view.MapModule, freemind.modes.Mode)
+	 */
+	public void afterMapModuleChange(MapModule pOldMapModule, Mode pOldMode,
+			MapModule pNewMapModule, Mode pNewMode) {
+<span class="nc" id="L818">		disposeDialog();</span>
+<span class="nc" id="L819">	}</span>
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see freemind.controller.MapModuleManager.MapModuleChangeObserver#
+	 * numberOfOpenMapInformation(int, int)
+	 */
+	public void numberOfOpenMapInformation(int pNumber, int pIndex) {
+<span class="nc" id="L828">	}</span>
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * plugins.map.MapNodePositionHolder.MapNodePositionListener#registerMapNode
+	 * (plugins.map.MapNodePositionHolder)
+	 */
+	public void registerMapNode(MapNodePositionHolder pMapNodePositionHolder) {
+<span class="nc" id="L838">		addMapMarker(pMapNodePositionHolder);</span>
+<span class="nc" id="L839">	}</span>
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * plugins.map.MapNodePositionHolder.MapNodePositionListener#deregisterMapNode
+	 * (plugins.map.MapNodePositionHolder)
+	 */
+	public void deregisterMapNode(MapNodePositionHolder pMapNodePositionHolder) {
+<span class="nc" id="L849">		removeMapMarker(pMapNodePositionHolder);</span>
+
+<span class="nc" id="L851">	}</span>
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * freemind.modes.ModeController.NodeSelectionListener#onUpdateNodeHook(
+	 * freemind.modes.MindMapNode)
+	 */
+	public void onUpdateNodeHook(MindMapNode pNode) {
+		// update MapMarkerLocation if present:
+<span class="nc" id="L862">		MapNodePositionHolder hook = MapNodePositionHolder.getHook(pNode);</span>
+<span class="nc bnc" id="L863" title="All 4 branches missed.">		if (hook != null &amp;&amp; mMarkerMap.containsKey(hook)) {</span>
+<span class="nc" id="L864">			MapMarkerLocation location = (MapMarkerLocation) mMarkerMap</span>
+<span class="nc" id="L865">					.get(hook);</span>
+<span class="nc" id="L866">			location.update();</span>
+<span class="nc" id="L867">			location.repaint();</span>
+		}
+
+<span class="nc" id="L870">	}</span>
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * freemind.modes.ModeController.NodeSelectionListener#onSelectHook(freemind
+	 * .view.mindmapview.NodeView)
+	 */
+	public void onFocusNode(NodeView pNode) {
+<span class="nc" id="L880">	}</span>
+
+	public void selectMapPosition(NodeView pNode, boolean sel) {
+		// test for map position:
+<span class="nc" id="L884">		MapNodePositionHolder hook = MapNodePositionHolder.getHook(pNode</span>
+<span class="nc" id="L885">				.getModel());</span>
+<span class="nc bnc" id="L886" title="All 2 branches missed.">		if (hook != null) {</span>
+<span class="nc bnc" id="L887" title="All 2 branches missed.">			if (mMarkerMap.containsKey(hook)) {</span>
+<span class="nc" id="L888">				MapMarkerLocation location = (MapMarkerLocation) mMarkerMap</span>
+<span class="nc" id="L889">						.get(hook);</span>
+<span class="nc" id="L890">				location.setSelected(sel);</span>
+<span class="nc" id="L891">				map.repaint();</span>
+			}
+		}
+<span class="nc" id="L894">	}</span>
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * freemind.modes.ModeController.NodeSelectionListener#onDeselectHook(freemind
+	 * .view.mindmapview.NodeView)
+	 */
+	public void onLostFocusNode(NodeView pNode) {
+
+<span class="nc" id="L905">	}</span>
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * freemind.modes.ModeController.NodeSelectionListener#onSaveNode(freemind
+	 * .modes.MindMapNode)
+	 */
+	public void onSaveNode(MindMapNode pNode) {
+<span class="nc" id="L915">	}</span>
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * freemind.modes.ModeController.NodeSelectionListener#onSelectionChange
+	 * (freemind.modes.MindMapNode, boolean)
+	 */
+	public void onSelectionChange(NodeView pNode, boolean pIsSelected) {
+<span class="nc" id="L925">		selectMapPosition(pNode, pIsSelected);</span>
+
+<span class="nc" id="L927">	}</span>
+
+	public CloseAction getCloseAction() {
+<span class="nc" id="L930">		return mCloseAction;</span>
+	}
+
+	public boolean isSearchBarVisible() {
+<span class="nc" id="L934">		return mSearchBarVisible;</span>
+	}
+
+	/**
+	 * @return &lt; MapNodePositionHolder, MapMarkerLocation &gt; of those nodes
+	 *         currently displayed (ie. not hidden)
+	 */
+	public Map getMarkerMap() {
+<span class="nc" id="L942">		return Collections.unmodifiableMap(mMarkerMap);</span>
+	}
+
+	public JCursorMapViewer getMap() {
+<span class="nc" id="L946">		return map;</span>
+	}
+
+	public void displaySearchItem(int index) {
+<span class="nc" id="L950">		Place place = getPlace(index);</span>
+<span class="nc" id="L951">		getFreeMindMapController().setCursorPosition(place);</span>
+<span class="nc bnc" id="L952" title="All 4 branches missed.">		if (mSingleSearch &amp;&amp; isSearchBarVisible()) {</span>
+<span class="nc" id="L953">			toggleSearchBar();</span>
+		}
+<span class="nc" id="L955">		mSingleSearch = false;</span>
+<span class="nc" id="L956">	}</span>
+
+	public Place getPlace(int index) {
+<span class="nc bnc" id="L959" title="All 2 branches missed.">		if (index &lt; 0) {</span>
+<span class="nc" id="L960">			throw new IllegalArgumentException(&quot;Index &quot; + index</span>
+<span class="nc" id="L961">					+ &quot; out of bounds.&quot;);</span>
+		}
+<span class="nc" id="L963">		index = mResultTableSorter.modelIndex(index);</span>
+<span class="nc" id="L964">		Place place = mResultTableModel.getPlace(index);</span>
+<span class="nc" id="L965">		return place;</span>
+	}
+
+	public JDialog getMapDialog() {
+<span class="nc" id="L969">		return mMapDialog;</span>
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * plugins.map.Registration.NodeVisibilityListener#nodeVisibilityChanged
+	 * (boolean)
+	 */
+	public void nodeVisibilityChanged(
+			MapNodePositionHolder pMapNodePositionHolder, boolean pVisible) {
+<span class="nc" id="L981">		changeVisibilityOfNode(pMapNodePositionHolder, pVisible);</span>
+<span class="nc" id="L982">	}</span>
+
+	public JLabel getStatusLabel() {
+<span class="nc" id="L985">		return mStatusLabel;</span>
+	}
+
+	public void search(String searchText, boolean pSelectFirstResult) {
+<span class="nc bnc" id="L989" title="All 2 branches missed.">		if (!isSearchBarVisible()) {</span>
+<span class="nc" id="L990">			toggleSearchBar();</span>
+		}
+<span class="nc" id="L992">		mSearchTerm.setText(searchText);</span>
+<span class="nc" id="L993">		boolean resultOk = getFreeMindMapController().search(mResultTableModel,</span>
+<span class="nc" id="L994">				mResultTable, searchText, mTableOriginalBackgroundColor);</span>
+<span class="nc" id="L995">		final int rowCount = mResultTableModel.getRowCount();</span>
+<span class="nc bnc" id="L996" title="All 2 branches missed.">		if (resultOk) {</span>
+<span class="nc bnc" id="L997" title="All 4 branches missed.">			if (mSingleSearch &amp;&amp; rowCount == 1) {</span>
+<span class="nc" id="L998">				displaySearchItem(0);</span>
+<span class="nc" id="L999">				this.map.requestFocus();</span>
+<span class="nc" id="L1000">				return;</span>
+			}
+<span class="nc bnc" id="L1002" title="All 2 branches missed.">			if (pSelectFirstResult) {</span>
+<span class="nc bnc" id="L1003" title="All 2 branches missed.">				if (rowCount &gt; 0) {</span>
+<span class="nc" id="L1004">					displaySearchItem(0);</span>
+				}
+			}
+<span class="nc" id="L1007">			mResultTable.requestFocus();</span>
+<span class="nc" id="L1008">		} else {</span>
+<span class="nc" id="L1009">			mSearchTerm.requestFocus();</span>
+		}
+
+<span class="nc" id="L1012">	}</span>
+
+	/**
+	 * 
+	 */
+	public void setSingleSearch() {
+<span class="nc" id="L1018">		mSingleSearch = true;</span>
+
+<span class="nc" id="L1020">	}</span>
+
+	/**
+	 * @return
+	 */
+	public boolean isLimitSearchToRegion() {
+<span class="nc" id="L1026">		return mLimitSearchToRegion;</span>
+	}
+
+	/**
+	 * 
+	 */
+	public void toggleLimitSearchToRegion() {
+<span class="nc bnc" id="L1033" title="All 2 branches missed.">		mLimitSearchToRegion = !mLimitSearchToRegion;</span>
+<span class="nc bnc" id="L1034" title="All 2 branches missed.">		if (mLimitSearchToRegion) {</span>
+<span class="nc" id="L1035">			mSearchStringLabel.setText(mResourceSearchLocationString);</span>
+<span class="nc" id="L1036">		} else {</span>
+<span class="nc" id="L1037">			mSearchStringLabel.setText(mResourceSearchString);</span>
+		}
+<span class="nc" id="L1039">		mSearchStringLabel.validate();</span>
+<span class="nc" id="L1040">	}</span>
+
+	protected void addSearchResultsToMap() {
+<span class="nc" id="L1043">		int[] selectedRows = mResultTable.getSelectedRows();</span>
+<span class="nc" id="L1044">		logger.info(&quot;Add results to map.&quot;);</span>
+<span class="nc" id="L1045">		getFreeMindMapController().addSearchResultsToMap(selectedRows);</span>
+<span class="nc" id="L1046">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span>FreeMind_integration (Aug 16, 2014 2:28:58 PM)</div></body></html>
