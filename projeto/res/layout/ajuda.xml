@@ -42,6 +42,15 @@ Power ups: \n
     Moeda: Aumenta em 100 a pontuação. \n
 "
         android:textColor="#ffffff" />
+    		
+    		<Button
+        android:id="@+id/voltar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:text="Voltar"
+        android:onClick="voltar" />
     		</LinearLayout>
     	 </ScrollView>
     </RelativeLayout>

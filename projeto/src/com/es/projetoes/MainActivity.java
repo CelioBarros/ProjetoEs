@@ -20,30 +20,10 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
-        Button bIniciar = (Button) findViewById(R.id.iniciar);
-        Button bAjuda = (Button) findViewById(R.id.ajuda);
-        Button bOpcoes   = (Button) findViewById(R.id.opcoes);
-        Button bRecorde   = (Button) findViewById(R.id.recorde);
-/*        bIniciar.setOnClickListener((OnClickListener) this);*/
-        bAjuda.setOnClickListener(new OnClickListener() {
-        	public void onClick(View v){
-        		switch (v.getId()) {
-                case R.id.ajuda:
-                	setContentView(R.layout.ajuda);
-        		}
-        	}
-        });
-        /*bOpcoes.setOnClickListener((OnClickListener) this);
-        bRecorde.setOnClickListener((OnClickListener) this);*/
     }
 
     public void onClick(View v) {
-        switch (v.getId()) {
-        case R.id.ajuda:
-        	setContentView(R.layout.ajuda);
-        case R.id.recorde:
-            System.exit(0);
-        }
+        
     }
     
     @Override
@@ -73,5 +53,13 @@ public class MainActivity extends ActionBarActivity {
     public void sairJogo(View v){
     	finish();
     	System.exit(0);
+    }
+    
+    public void voltar(View v){
+    	setContentView(R.layout.activity_main);
+    }
+    
+    public void ajuda(View v){
+    	setContentView(R.layout.ajuda);
     }
 }

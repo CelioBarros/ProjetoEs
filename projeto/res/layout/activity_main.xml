@@ -24,7 +24,8 @@
         android:layout_height="wrap_content"
         android:layout_above="@+id/recorde"
         android:layout_toLeftOf="@+id/recorde"
-        android:text="Ajuda" />
+        android:text="Ajuda" 
+        android:onClick="ajuda"/>
 
     <Button
         android:id="@+id/iniciar"
