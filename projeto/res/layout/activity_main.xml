@@ -16,6 +16,7 @@
         android:layout_alignBaseline="@+id/iniciar"
         android:layout_alignBottom="@+id/iniciar"
         android:layout_centerHorizontal="true"
+        android:onClick="recordeTela"
         android:text="Recorde" />
 
     <Button

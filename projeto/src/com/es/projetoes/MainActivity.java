@@ -1,19 +1,25 @@
 package com.es.projetoes;
 
+import java.util.List;
+
 import com.es.R;
+import com.es.banco.DataBase;
 import com.es.jogo.Jogo;
 
 import android.support.v7.app.ActionBarActivity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.TextView;
 
 
 public class MainActivity extends ActionBarActivity {
+	
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,5 +67,16 @@ public class MainActivity extends ActionBarActivity {
     
     public void ajuda(View v){
     	setContentView(R.layout.ajuda);
+    }
+    
+    public void recordeTela(View v){
+    	setContentView(R.layout.recorde);
+    	recorde(v);
+    }
+    
+    public void recorde(View v){
+    	DataBase db = DataBase.getInstance(this);
+    	TextView textView = (TextView) findViewById(R.id.recorde);
+    	textView.setText("Melhor Ranking: "+db.findRanking());
     }
 }
