@@ -199,7 +199,7 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 					if(ballSprite.collidesWith(bloco)){
 						ballSprite.setPosition(bloco.getX()-94, ballSprite.getY());
 						//isAlive= false;
-					}
+					} 
 					if(bloco.getX()<0){
 						scene.detachChild(bloco);
 						listaBlocosRemove.add(bloco);

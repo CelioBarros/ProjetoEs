@@ -2,6 +2,7 @@ package com.es.projetoes;
 
 import java.util.List;
 
+
 import com.es.R;
 import com.es.banco.DataBase;
 import com.es.jogo.Jogo;
