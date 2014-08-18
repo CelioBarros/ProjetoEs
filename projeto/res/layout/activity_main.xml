@@ -17,6 +17,8 @@
         android:layout_alignBottom="@+id/iniciar"
         android:layout_centerHorizontal="true"
         android:onClick="recordeTela"
+        android:background="#8B0000"
+        android:textColor="#FFFFFF"
         android:text="Recorde" />
 
     <Button
@@ -26,6 +28,8 @@
         android:layout_above="@+id/recorde"
         android:layout_toLeftOf="@+id/recorde"
         android:text="Ajuda" 
+        android:background="#8B0000"
+        android:textColor="#FFFFFF"
         android:onClick="ajuda"/>
 
     <Button
@@ -36,6 +40,8 @@
         android:layout_marginBottom="43dp"
         android:layout_toLeftOf="@+id/ajuda"
         android:onClick="iniciarJogo"
+        android:background="#8B0000"
+        android:textColor="#FFFFFF"
         android:text="Iniciar" />
 
     <Button
@@ -46,6 +52,8 @@
         android:layout_alignBottom="@+id/recorde"
         android:layout_toRightOf="@+id/opcoes"
         android:onClick="sairJogo"
+        android:background="#8B0000"
+        android:textColor="#FFFFFF"
         android:text="Sair" />
 
     <Button
@@ -55,6 +63,8 @@
         android:layout_alignBaseline="@+id/ajuda"
         android:layout_alignBottom="@+id/ajuda"
         android:layout_toRightOf="@+id/recorde"
+        android:background="#8B0000"
+        android:textColor="#FFFFFF"
         android:text="Opções" />
 
 </RelativeLayout>

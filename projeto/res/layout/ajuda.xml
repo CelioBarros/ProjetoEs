@@ -25,6 +25,7 @@
         	android:layout_alignParentTop="false"
         	android:layout_alignParentLeft="true"
         	android:layout_gravity="center"
+        	android:textSize="15dp"
         	android:text="
 Objetivo: \n
     Movimente a bolinha inclinando o aparelho para os lados se esquivando dos obstáculos, pegando o máximo de power ups que conseguir. Incline para frente para mover a bolinha. Avance o mais longe possível e em menos tempo para aumentar a pontuação, se o tempo chegar a zero acaba o jogo. \n
@@ -49,6 +50,8 @@ Power ups: \n
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
+        android:background="#8B0000"
+        android:textColor="#FFFFFF"
         android:text="Voltar"
         android:onClick="voltar" />
     		</LinearLayout>

@@ -35,6 +35,7 @@ import org.andengine.util.HorizontalAlign;
 import org.andengine.util.adt.io.in.IInputStreamOpener;
 
 import com.es.banco.DataBase;
+import com.es.projetoes.GameOver;
 import com.es.projetoes.MainActivity;
 
 import android.content.Context;
@@ -59,25 +60,41 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 	// Fields
 	// ===========================================================
 
-
+	//BackGround Paralelo
 	private BitmapTextureAtlas mAutoParallaxBackgroundTexture;
-
 	private ITextureRegion mParallaxLayerBack;
 
+	//Ball
 	Sprite ballSprite;
 	Context ctx;
 	private ITextureRegion ball;
-	Sprite obstaculoSprite;
-	float teste = 900; 
-	int score = 0;
-	int countScore = 0;
-	boolean isAlive = true;
+
+	//Obstaculo
 	private BitmapTextureAtlas mBitmapObstaculoTextureAtlas;
 	private TextureRegion mObstaculoTextureRegion;
+	Sprite obstaculoSprite;
+	float teste = 900; 
+
+	//Buraco
+	private BitmapTextureAtlas mBitmapBuracoTextureAtlas;
+	private TextureRegion mBuracoTextureRegion;
+	Sprite buracoSprite;
+
+	//Score	
+	private int score = 0;
+	int countScore = 0;
 	private BitmapFont mBitmapFont;
+	boolean isAlive = true;
 	private Text bitmapText;
+
+	//Listas
 	private ArrayList<Sprite> listaBlocos = new ArrayList<Sprite>();
 	private ArrayList<Sprite> listaBlocosRemove = new ArrayList<Sprite>();
+	private ArrayList<Sprite> listaBuraco = new ArrayList<Sprite>();
+	private ArrayList<Sprite> listaBuracoRemove = new ArrayList<Sprite>();
+
+	DataBase db = new DataBase(this);
+
 
 	// ===========================================================
 	// Constructors
@@ -99,7 +116,7 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 
 	@Override
 	public void onCreateResources() {
-		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/");
+		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/"); 
 
 		this.mBitmapObstaculoTextureAtlas = new BitmapTextureAtlas(this.getTextureManager(), 32, 32);
 		this.mObstaculoTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBitmapObstaculoTextureAtlas, this, "bloco.png",0,0);
@@ -131,10 +148,13 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}       
-		
+
 		this.mBitmapFont = new BitmapFont(this.getTextureManager(), this.getAssets(), "font/BitmapFont.fnt");
 		this.mBitmapFont.load();
 
+		this.mBitmapBuracoTextureAtlas = new BitmapTextureAtlas(this.getTextureManager(), 70, 69);
+		this.mBuracoTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBitmapBuracoTextureAtlas, this, "buraco.png",0,0);
+		mBitmapBuracoTextureAtlas.load();
 	}
 
 	@Override
@@ -150,20 +170,18 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 		ballSprite = new Sprite(0, 0, this.ball, getVertexBufferObjectManager());
 		final PhysicsHandler physicsHandler = new PhysicsHandler(ballSprite);
 		ballSprite.registerUpdateHandler(physicsHandler);
-		
-		
+
+
 		//while (true) {
-	//		listaBlocos.add(new Sprite(900,100, mObstaculoTextureRegion,getVertexBufferObjectManager()));
-			
-	//	}
-		
-		 
+		//		listaBlocos.add(new Sprite(900,100, mObstaculoTextureRegion,getVertexBufferObjectManager()));
+
+		//	}
 
 		scene.attachChild(ballSprite);   
 		bitmapText = new Text(0, 0, this.mBitmapFont, "Score:                  ", new TextOptions(HorizontalAlign.CENTER), this.getVertexBufferObjectManager());
 		scene.attachChild(bitmapText);
 		/* Create two sprits and add it to the scene. */
-		
+
 		scene.registerUpdateHandler(new IUpdateHandler() {
 			//float testeAux = teste;
 
@@ -173,37 +191,43 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 
 			@Override
 			public void onUpdate(float pSecondsElapsed) {
-				if(countScore%60 == 0){
-			        int numero = (int) (Math.random()*480);
+				int numero = (int) (Math.random()*448);
+				if(countScore%101 == 0){
 					listaBlocos.add(new Sprite(900,numero, mObstaculoTextureRegion,getVertexBufferObjectManager()));
+
+				}
+				if(countScore%121 == 0 && countScore != 0){
+					listaBuraco.add(new Sprite(900,numero, mBuracoTextureRegion,getVertexBufferObjectManager()));
 
 				}
 
 				for (Sprite bloco : listaBlocos) {
 					//Log.d("teste", bloco.toString());
 					scene.detachChild(bloco);
-				}
-				for (Sprite bloco : listaBlocos) {
-					//Log.d("teste", bloco.toString());
 					scene.attachChild(bloco);
 				}
 
-				
-				Log.d("teste", listaBlocos.size() + "" );
+				for (Sprite buraco : listaBuraco) {
+					//Log.d("teste", bloco.toString());
+					scene.detachChild(buraco);
+					scene.attachChild(buraco);
+				}
+
+				//Log.d("teste", listaBlocos.size() + "" );
 				Score();
 				for (Sprite bloco : listaBlocos) {
 
 					float testeAux = bloco.getX()- 2f;
 					bloco.setPosition(testeAux, bloco.getY());
-					
+
 					if(ballSprite.collidesWith(bloco)){
 						ballSprite.setPosition(bloco.getX()-94, ballSprite.getY());
 						//isAlive= false;
-					} 
+					}  
 					if(bloco.getX()<0){
 						scene.detachChild(bloco);
 						listaBlocosRemove.add(bloco);
-						
+
 					}
 				}
 				for (Sprite bloco : listaBlocosRemove) {
@@ -211,6 +235,34 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 				}
 				listaBlocosRemove = new ArrayList<Sprite>();
 				//Log.d("Teste", score + ""  );
+
+				for (Sprite buraco : listaBuraco) {
+
+					float testeAux = buraco.getX()- 2f;
+					buraco.setPosition(testeAux, buraco.getY());
+
+					if(ballSprite.collidesWith(buraco) && isAlive){
+						db.addRanking(score);
+						Intent telaInicial = new Intent(Jogo.this, GameOver.class);
+						startActivity(telaInicial);
+						finish();
+						isAlive= false;
+
+						//scene.unregisterUpdateHandler(this);
+						break;
+					}  
+					if(buraco.getX()<0){
+						scene.detachChild(buraco);
+						listaBlocosRemove.add(buraco);
+
+					}
+				}
+				
+				for (Sprite buraco : listaBuracoRemove) {
+					listaBuraco.remove(buraco);
+				}
+				listaBuracoRemove = new ArrayList<Sprite>();
+				
 			}
 		});
 		return scene;
@@ -254,20 +306,17 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 
 	public void Score(){
 		if(isAlive){
-		this.countScore = countScore + 1;
-		this.score = countScore/100;	
-		bitmapText.setText("Score: " +(int) score);
-		} else {
-			//DataBase db = new DataBase(this);
-			//db.addRanking((int) this.score);
+			this.countScore = countScore + 1;
+			this.score = countScore/100;	
+			bitmapText.setText("Score: " +(int) score);
 		}
 	}
-	
+
 	public void SpawnBlocos(){
-		
+
 	}
-	
-	
+
+
 
 	// ===========================================================
 	// Inner and Anonymous Classes

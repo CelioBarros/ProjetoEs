@@ -45,7 +45,7 @@ public class DataBase extends SQLiteOpenHelper {
 	 */
 	public final void addRanking(int ranking) {
 		final ContentValues values = new ContentValues();
-		
+
 		values.put(COLUMN_RANKING, ranking);
 		SQLiteDatabase db = this.getWritableDatabase();
 		db.insert(TABLE_RANKING, null, values);
@@ -77,7 +77,7 @@ public class DataBase extends SQLiteOpenHelper {
 		return String.valueOf(melhor);
 	}
 
-	
+
 	private static DataBase instance = null;
 
 	public static DataBase getInstance(Context context) {
