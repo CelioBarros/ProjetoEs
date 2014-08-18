@@ -36,13 +36,17 @@ import org.andengine.ui.activity.SimpleBaseGameActivity;
 import org.andengine.util.HorizontalAlign;
 import org.andengine.util.adt.io.in.IInputStreamOpener;
 
+import com.es.R;
 import com.es.banco.DataBase;
+import com.es.projetoes.Configuracao;
 import com.es.projetoes.GameOver;
 import com.es.projetoes.MainActivity;
 
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
+import android.view.View;
+import android.widget.CheckBox;
 
 /**
  * (c) 2010 Nicolas Gramlich
@@ -109,7 +113,6 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 	private Music mMusic;
 	DataBase db = new DataBase(this);
 	//private Music myMusic;
-
 
 	// ===========================================================
 	// Constructors
@@ -376,9 +379,10 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 	@Override
 	public synchronized void onResumeGame() {
 	  if(mMusic != null && !mMusic.isPlaying()){
+		  
+		  mMusic.play();  
 	    //mMusic.play();
 	  }
-	  
 	  super.onResumeGame();
 	}
 

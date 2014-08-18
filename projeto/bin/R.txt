@@ -283,7 +283,6 @@ int id opcoes 0x7f050040
 int id progress_circular 0x7f050018
 int id progress_horizontal 0x7f050019
 int id radio 0x7f05002f
-int id radioButton1 0x7f050045
 int id recorde 0x7f05003c
 int id sair 0x7f05003f
 int id scroll 0x7f050041
@@ -301,6 +300,7 @@ int id shortcut 0x7f05002e
 int id showCustom 0x7f050007
 int id showHome 0x7f050004
 int id showTitle 0x7f050006
+int id som 0x7f050045
 int id split_action_bar 0x7f05001e
 int id submit_area 0x7f050039
 int id tabMode 0x7f050002
