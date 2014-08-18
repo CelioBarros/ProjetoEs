@@ -2,6 +2,8 @@ package com.es.jogo;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Random;
 
 import org.andengine.engine.camera.Camera;
 import org.andengine.engine.handler.IUpdateHandler;
@@ -13,9 +15,12 @@ import org.andengine.entity.scene.Scene;
 import org.andengine.entity.scene.background.AutoParallaxBackground;
 import org.andengine.entity.scene.background.ParallaxBackground.ParallaxEntity;
 import org.andengine.entity.sprite.Sprite;
+import org.andengine.entity.text.Text;
+import org.andengine.entity.text.TextOptions;
 import org.andengine.entity.util.FPSLogger;
 import org.andengine.input.sensor.acceleration.AccelerationData;
 import org.andengine.input.sensor.acceleration.IAccelerationListener;
+import org.andengine.opengl.font.BitmapFont;
 import org.andengine.opengl.texture.ITexture;
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlas;
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlasTextureRegionFactory;
@@ -26,9 +31,14 @@ import org.andengine.opengl.texture.region.TextureRegionFactory;
 import org.andengine.opengl.vbo.VertexBufferObjectManager;
 import org.andengine.ui.activity.BaseGameActivity;
 import org.andengine.ui.activity.SimpleBaseGameActivity;
+import org.andengine.util.HorizontalAlign;
 import org.andengine.util.adt.io.in.IInputStreamOpener;
 
+import com.es.banco.DataBase;
+import com.es.projetoes.MainActivity;
+
 import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 
 /**
@@ -59,9 +69,15 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 	private ITextureRegion ball;
 	Sprite obstaculoSprite;
 	float teste = 900; 
-
+	int score = 0;
+	int countScore = 0;
+	boolean isAlive = true;
 	private BitmapTextureAtlas mBitmapObstaculoTextureAtlas;
 	private TextureRegion mObstaculoTextureRegion;
+	private BitmapFont mBitmapFont;
+	private Text bitmapText;
+	private ArrayList<Sprite> listaBlocos = new ArrayList<Sprite>();
+	private ArrayList<Sprite> listaBlocosRemove = new ArrayList<Sprite>();
 
 	// ===========================================================
 	// Constructors
@@ -115,6 +131,9 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}       
+		
+		this.mBitmapFont = new BitmapFont(this.getTextureManager(), this.getAssets(), "font/BitmapFont.fnt");
+		this.mBitmapFont.load();
 
 	}
 
@@ -131,14 +150,22 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 		ballSprite = new Sprite(0, 0, this.ball, getVertexBufferObjectManager());
 		final PhysicsHandler physicsHandler = new PhysicsHandler(ballSprite);
 		ballSprite.registerUpdateHandler(physicsHandler);
-		final Sprite bloco = new Sprite(750,100, mObstaculoTextureRegion,getVertexBufferObjectManager());
-		scene.attachChild(bloco);
+		
+		
+		//while (true) {
+	//		listaBlocos.add(new Sprite(900,100, mObstaculoTextureRegion,getVertexBufferObjectManager()));
+			
+	//	}
+		
+		 
+
 		scene.attachChild(ballSprite);   
-
-
+		bitmapText = new Text(0, 0, this.mBitmapFont, "Score:                  ", new TextOptions(HorizontalAlign.CENTER), this.getVertexBufferObjectManager());
+		scene.attachChild(bitmapText);
 		/* Create two sprits and add it to the scene. */
-
+		
 		scene.registerUpdateHandler(new IUpdateHandler() {
+			//float testeAux = teste;
 
 			@Override
 			public void reset() {  
@@ -146,13 +173,44 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 
 			@Override
 			public void onUpdate(float pSecondsElapsed) {
-				teste = teste- 2f;
-				bloco.setPosition(teste, 100);
-				
-				if(ballSprite.collidesWith(bloco)){
-					ballSprite.setPosition(bloco.getX()-94, ballSprite.getY());
+				if(countScore%60 == 0){
+			        int numero = (int) (Math.random()*480);
+					listaBlocos.add(new Sprite(900,numero, mObstaculoTextureRegion,getVertexBufferObjectManager()));
+
 				}
 
+				for (Sprite bloco : listaBlocos) {
+					//Log.d("teste", bloco.toString());
+					scene.detachChild(bloco);
+				}
+				for (Sprite bloco : listaBlocos) {
+					//Log.d("teste", bloco.toString());
+					scene.attachChild(bloco);
+				}
+
+				
+				Log.d("teste", listaBlocos.size() + "" );
+				Score();
+				for (Sprite bloco : listaBlocos) {
+
+					float testeAux = bloco.getX()- 2f;
+					bloco.setPosition(testeAux, bloco.getY());
+					
+					if(ballSprite.collidesWith(bloco)){
+						ballSprite.setPosition(bloco.getX()-94, ballSprite.getY());
+						//isAlive= false;
+					}
+					if(bloco.getX()<0){
+						scene.detachChild(bloco);
+						listaBlocosRemove.add(bloco);
+						
+					}
+				}
+				for (Sprite bloco : listaBlocosRemove) {
+					listaBlocos.remove(bloco);
+				}
+				listaBlocosRemove = new ArrayList<Sprite>();
+				//Log.d("Teste", score + ""  );
 			}
 		});
 		return scene;
@@ -194,6 +252,22 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 	// Methods
 	// ===========================================================
 
+	public void Score(){
+		if(isAlive){
+		this.countScore = countScore + 1;
+		this.score = countScore/100;	
+		bitmapText.setText("Score: " +(int) score);
+		} else {
+			//DataBase db = new DataBase(this);
+			//db.addRanking((int) this.score);
+		}
+	}
+	
+	public void SpawnBlocos(){
+		
+	}
+	
+	
 
 	// ===========================================================
 	// Inner and Anonymous Classes
