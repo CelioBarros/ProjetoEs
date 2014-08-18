@@ -55,5 +55,10 @@ public class MainActivity extends ActionBarActivity {
     	finish();
     }
     
+    public void configuracao(View v){
+    	Intent intent = new Intent(this, Configuracao.class);
+    	startActivity(intent);
+    	finish();
+    }
    
 }

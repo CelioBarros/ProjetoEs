@@ -64,6 +64,7 @@
         android:layout_alignBottom="@+id/ajuda"
         android:layout_toRightOf="@+id/recorde"
         android:background="#8B0000"
+        android:onClick="configuracao"
         android:textColor="#FFFFFF"
         android:text="Opções" />
 

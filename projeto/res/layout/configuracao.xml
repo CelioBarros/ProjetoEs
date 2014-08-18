@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/planodefundo"
+    android:orientation="vertical" >
+
+        <RadioButton
+            android:id="@+id/radioButton1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginLeft="84dp"
+            android:layout_marginTop="44dp"
+            android:text="Som"
+            android:textSize="30dp"
+            android:textColor="#FFFFFF" />
+
+        <Button
+            android:id="@+id/voltar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:background="#8B0000"
+            android:onClick="voltar"
+            android:text="Voltar"
+            android:textColor="#FFFFFF" />
+
+</RelativeLayout>

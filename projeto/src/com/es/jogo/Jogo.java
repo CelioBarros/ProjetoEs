@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Random;
 
+import org.andengine.audio.music.Music;
+import org.andengine.audio.music.MusicFactory;
 import org.andengine.engine.camera.Camera;
 import org.andengine.engine.handler.IUpdateHandler;
 import org.andengine.engine.handler.physics.PhysicsHandler;
@@ -104,8 +106,9 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 	private ArrayList<Sprite> listaBlocosRemove = new ArrayList<Sprite>();
 	private ArrayList<Sprite> listaFim = new ArrayList<Sprite>();
 	private ArrayList<Sprite> listaFimRemove = new ArrayList<Sprite>();
-
+	private Music mMusic;
 	DataBase db = new DataBase(this);
+	//private Music myMusic;
 
 
 	// ===========================================================
@@ -123,13 +126,25 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 	@Override
 	public EngineOptions onCreateEngineOptions() {
 		final Camera camera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
-		return new EngineOptions(true, ScreenOrientation.LANDSCAPE_FIXED, new RatioResolutionPolicy(CAMERA_WIDTH, CAMERA_HEIGHT), camera);
+		EngineOptions engineOptions = new EngineOptions(true, ScreenOrientation.LANDSCAPE_FIXED, new RatioResolutionPolicy(CAMERA_WIDTH, CAMERA_HEIGHT), camera);
+		engineOptions.getAudioOptions().setNeedsMusic(true);
+		return engineOptions;
 	}
 
 	@Override
 	public void onCreateResources() {
 		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/"); 
-
+		MusicFactory.setAssetBasePath("mfx/");
+		
+		try {
+			mMusic = MusicFactory.createMusicFromAsset(getMusicManager(), this, "music.mp3");
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		
+		
 		this.mBitmapObstaculoTextureAtlas = new BitmapTextureAtlas(this.getTextureManager(), 32, 32);
 		this.mObstaculoTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBitmapObstaculoTextureAtlas, this, "bloco.png",0,0);
 
@@ -185,6 +200,7 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 		this.mEngine.registerUpdateHandler(new FPSLogger());
 
 		final Scene scene = new Scene();
+		//myMusic.play();
 		final AutoParallaxBackground autoParallaxBackground = new AutoParallaxBackground(0, 0, 0, 5);
 		final VertexBufferObjectManager vertexBufferObjectManager = this.getVertexBufferObjectManager();
 		autoParallaxBackground.attachParallaxEntity(new ParallaxEntity(-20f, new Sprite(0, CAMERA_HEIGHT - this.mParallaxLayerBack.getHeight(), this.mParallaxLayerBack, vertexBufferObjectManager)));
@@ -355,6 +371,25 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 
 	public void SpawnBlocos(){
 
+	}
+	
+	@Override
+	public synchronized void onResumeGame() {
+	  if(mMusic != null && !mMusic.isPlaying()){
+	    //mMusic.play();
+	  }
+	  
+	  super.onResumeGame();
+	}
+
+	
+	@Override
+	public synchronized void onPauseGame() {
+	  if(mMusic != null && mMusic.isPlaying()){
+	    mMusic.pause();
+	  }
+	  
+	  super.onPauseGame();
 	}
 
 
