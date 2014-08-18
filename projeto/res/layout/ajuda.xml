@@ -35,11 +35,9 @@ Dicas: \n
     \n
 Obstáculos: \n
     Paredes: Não permite a progressão da bolinha. \n
-    Fogo / Buraco / Bomba: O usuário perde o jogo. \n
-    Gosma: Diminui a velocidade da bolinha. \n 
+    Buraco / Bomba: O usuário perde o jogo. \n
 \n
 Power ups: \n
-    Relógio: Aumenta o tempo que o usuário possui para continuar jogando. \n
     Moeda: Aumenta em 100 a pontuação. \n
 "
         android:textColor="#ffffff" />
