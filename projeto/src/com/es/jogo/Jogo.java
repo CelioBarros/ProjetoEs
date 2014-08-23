@@ -3,7 +3,6 @@ package com.es.jogo;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Random;
 
 import org.andengine.audio.music.Music;
 import org.andengine.audio.music.MusicFactory;
@@ -31,22 +30,16 @@ import org.andengine.opengl.texture.region.ITextureRegion;
 import org.andengine.opengl.texture.region.TextureRegion;
 import org.andengine.opengl.texture.region.TextureRegionFactory;
 import org.andengine.opengl.vbo.VertexBufferObjectManager;
-import org.andengine.ui.activity.BaseGameActivity;
 import org.andengine.ui.activity.SimpleBaseGameActivity;
 import org.andengine.util.HorizontalAlign;
 import org.andengine.util.adt.io.in.IInputStreamOpener;
 
-import com.es.R;
 import com.es.banco.DataBase;
-import com.es.projetoes.Configuracao;
 import com.es.projetoes.GameOver;
-import com.es.projetoes.MainActivity;
 
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
-import android.view.View;
-import android.widget.CheckBox;
 
 /**
  * (c) 2010 Nicolas Gramlich
@@ -74,7 +67,8 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 	Sprite ballSprite;
 	Context ctx;
 	private ITextureRegion ball;
-
+	private float xAntigoBola = 0;
+	private float yAntigoBola = 0;
 	//Obstaculo
 	private BitmapTextureAtlas mBitmapObstaculoTextureAtlas;
 	private TextureRegion mObstaculoTextureRegion;
@@ -112,6 +106,7 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 	private ArrayList<Sprite> listaFimRemove = new ArrayList<Sprite>();
 	private Music mMusic;
 	DataBase db = new DataBase(this);
+	
 	//private Music myMusic;
 
 	// ===========================================================
@@ -238,7 +233,7 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 					listaBlocos.add(new Sprite(900,numero, mObstaculoTextureRegion,getVertexBufferObjectManager()));
 
 				}
-				if(countScore%121 == 0 && countScore != 0){
+				if(countScore%121 == 0 && countScore!=0){
 					if((int) (Math.random()*2)==0){
 						listaFim.add(new Sprite(900,numero, mBuracoTextureRegion,getVertexBufferObjectManager()));
 					} else{
@@ -247,9 +242,12 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 				}
 				
 				if(countScore%1081 == 0){
-					moeda = new Sprite(900,numero, mMoedaTextureRegion,getVertexBufferObjectManager());
+					if(countScore== 0){
+						moeda = new Sprite(1500,numero, mMoedaTextureRegion,getVertexBufferObjectManager());
+					}else{
+						moeda = new Sprite(900,numero, mMoedaTextureRegion,getVertexBufferObjectManager());
+					}
 					scene.attachChild(moeda);
-
 				}
 
 				for (Sprite bloco : listaBlocos) {
@@ -271,9 +269,31 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 					float testeAux = bloco.getX()- 2f;
 					bloco.setPosition(testeAux, bloco.getY());
 
-					if(ballSprite.collidesWith(bloco)){
-						ballSprite.setPosition(bloco.getX()-94, ballSprite.getY());
-						//isAlive= false;
+					try {
+						if(isCollides(ballSprite, bloco)){
+							if(ballSprite.getX()==0){
+								end();
+								break;
+							}
+							ballSprite.setPosition(xAntigoBola, yAntigoBola);
+							//isAlive= false;
+						}else{
+							if (yAntigoBola < ballSprite.getY()) {
+								yAntigoBola = ballSprite.getY()-10;
+							}
+							else if(yAntigoBola > ballSprite.getY()){
+								yAntigoBola = ballSprite.getY()+10;
+							}else{
+								yAntigoBola = ballSprite.getY();
+							}
+							if (xAntigoBola != ballSprite.getX()) {
+								xAntigoBola = ballSprite.getX()-6;
+							}
+						}
+						
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}  
 					if(bloco.getX()<0){
 						scene.detachChild(bloco);
@@ -284,7 +304,7 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 				for (Sprite bloco : listaBlocosRemove) {
 					listaBlocos.remove(bloco);
 				}
-				listaBlocosRemove = new ArrayList<Sprite>();
+				listaBlocosRemove.clear();
 				//Log.d("Teste", score + ""  );
 
 				for (Sprite fim : listaFim) {
@@ -292,15 +312,16 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 					float testeAux = fim.getX()- 2f;
 					fim.setPosition(testeAux, fim.getY());
 
-					if(ballSprite.collidesWith(fim) && isAlive){
-						db.addRanking(score);
-						Intent telaInicial = new Intent(Jogo.this, GameOver.class);
-						startActivity(telaInicial);
-						finish();
-						isAlive= false;
+					try {
+						if(isCollides(ballSprite,fim) && isAlive){
+							end();
 
-						//scene.unregisterUpdateHandler(this);
-						break;
+							//scene.unregisterUpdateHandler(this);
+							break;
+						}
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}  
 					if(fim.getX()<0){
 						scene.detachChild(fim);
@@ -312,7 +333,7 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 				for (Sprite buraco : listaFimRemove) {
 					listaFim.remove(buraco);
 				}
-				listaFimRemove = new ArrayList<Sprite>();
+				listaFimRemove.clear();
 
 				moeda.setPosition(moeda.getX()-2f, moeda.getY());
 				
@@ -331,6 +352,14 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 	public void onAccelerationAccuracyChanged(AccelerationData pAccelerationData) {
 		// TODO Auto-generated method stub
 
+	}
+	
+	public void end(){
+		db.addRanking(score);
+		Intent telaInicial = new Intent(Jogo.this, GameOver.class);
+		startActivity(telaInicial);
+		finish();
+		isAlive= false;
 	}
 
 	@Override
@@ -376,6 +405,7 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 
 	}
 	
+	
 	@Override
 	public synchronized void onResumeGame() {
 	  if(mMusic != null && !mMusic.isPlaying()){
@@ -396,7 +426,21 @@ public class Jogo extends SimpleBaseGameActivity implements IAccelerationListene
 	  super.onPauseGame();
 	}
 
+	public boolean isCollides(Sprite animSprite1 ,Sprite animSprite2) throws Exception{
 
+
+		float diffX = Math.abs( (animSprite1.getX() +  animSprite1.getWidth()/2 )- 
+		             (animSprite2.getX() + animSprite2.getWidth()/2 ));
+		float diffY = Math.abs( (animSprite1.getY() +  animSprite1.getHeight()/2 )- 
+		             (animSprite2.getY() + animSprite2.getHeight()/2 ));
+
+		if(diffX < (animSprite1.getWidth()/2 + animSprite2.getWidth()/3) 
+		           && diffY < (animSprite1.getHeight()/2 + animSprite2.getHeight()/3)){
+
+		   return true;
+		}else
+		  return false;
+		}
 
 	// ===========================================================
 	// Inner and Anonymous Classes
