@@ -9,7 +9,6 @@
             android:id="@+id/som"
             android:layout_width="80dp"
             android:layout_height="wrap_content"
-            android:layout_alignParentLeft="true"
             android:layout_alignParentTop="true"
             android:layout_marginLeft="63dp"
             android:layout_marginTop="68dp"
