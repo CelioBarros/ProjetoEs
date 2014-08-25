@@ -28,17 +28,17 @@
         	android:textSize="15dp"
         	android:text="
 Objetivo: \n
-    Movimente a bolinha inclinando o aparelho para os lados se esquivando dos obstáculos, pegando o máximo de power ups que conseguir. Incline para frente para mover a bolinha. Avance o mais longe possível e em menos tempo para aumentar a pontuação, se o tempo chegar a zero acaba o jogo. \n
+    Movimente a bolinha inclinando o aparelho para os lados se esquivando dos obstáculos, pegando o máximo de power ups que conseguir. Incline para frente para mover a bolinha. Avance o mais longe possível para aumentar a pontuação, se colidir com algum obstáculo acaba o jogo. \n
 \n
 Dicas: \n 
     Ao inclinar o dispositivo para frente, a partir de certo ponto a velocidade da bolinha aumenta, se inclinar para trás a velocidade diminui.\n
     \n
 Obstáculos: \n
-    Paredes: Não permite a progressão da bolinha. \n
+    Paredes: Não permite a progressão da bolinha, se ficar lhe empurrar até a parede você perde. \n
     Buraco / Bomba: O usuário perde o jogo. \n
 \n
 Power ups: \n
-    Moeda: Aumenta em 100 a pontuação. \n
+    Moeda: Aumenta a pontuação. \n
 "
         android:textColor="#ffffff" />
     		
