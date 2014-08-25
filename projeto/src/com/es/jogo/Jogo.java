@@ -36,6 +36,7 @@ import org.andengine.util.adt.io.in.IInputStreamOpener;
 
 import com.es.R;
 import com.es.banco.DataBase;
+import com.es.projetoes.Configuracao;
 import com.es.projetoes.GameOver;
 
 import android.content.Context;
@@ -438,7 +439,7 @@ public class Jogo extends SimpleBaseGameActivity implements
 
 	@Override
 	public synchronized void onResumeGame() {
-		if (mMusic != null && !mMusic.isPlaying()) {
+		if (mMusic != null && !mMusic.isPlaying() && Configuracao.isSomAtivo()) {
 
 			mMusic.play();
 			// mMusic.play();

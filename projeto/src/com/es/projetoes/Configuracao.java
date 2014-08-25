@@ -9,6 +9,8 @@ import android.view.View;
 import android.widget.CheckBox;
 
 public class Configuracao extends Activity{
+	
+	private static boolean somAtivo = true;
 
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -21,9 +23,18 @@ public class Configuracao extends Activity{
 		finish();
 	}
 
-	public boolean sound(View v){
+	public void sound(View v){
 	     CheckBox checkBox = (CheckBox) findViewById(R.id.som);
-	     return checkBox.isChecked();
+	     setSomAtivo(checkBox.isChecked());
 	}
+
+	public static boolean isSomAtivo() {
+		return somAtivo;
+	}
+
+	public static void setSomAtivo(boolean somAtivo) {
+		Configuracao.somAtivo = somAtivo;
+	}
+	
 	
 }
