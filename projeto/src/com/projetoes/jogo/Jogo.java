@@ -34,15 +34,12 @@ import org.andengine.ui.activity.SimpleBaseGameActivity;
 import org.andengine.util.HorizontalAlign;
 import org.andengine.util.adt.io.in.IInputStreamOpener;
 
-import com.projetoes.R;
 import com.projetoes.banco.DataBase;
 import com.projetoes.projetoes.Configuracao;
 import com.projetoes.projetoes.GameOver;
 
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
-import android.widget.CheckBox;
 
 /**
  * (c) 2010 Nicolas Gramlich (c) 2011 Zynga
@@ -95,7 +92,7 @@ public class Jogo extends SimpleBaseGameActivity implements
 	Sprite moeda;
 
 	// Score
-	private int score = 0;
+	public static int score = 0;
 	int countScore = 0;
 	private BitmapFont mBitmapFont;
 	boolean isAlive = true;

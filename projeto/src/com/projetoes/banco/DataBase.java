@@ -7,10 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-
-import com.projetoes.projetoes.MainActivity;
 
 public class DataBase extends SQLiteOpenHelper {
 	private static final int DATABASE_VERSION = 1;

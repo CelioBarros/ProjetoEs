@@ -1,26 +1,12 @@
 package com.projetoes.projetoes;
 
-import java.util.List;
-
-
-
-
-
-
 import com.projetoes.R;
-import com.projetoes.banco.DataBase;
 import com.projetoes.jogo.Jogo;
 
 import android.support.v7.app.ActionBarActivity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.Button;
-import android.widget.TextView;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -41,7 +27,6 @@ public class MainActivity extends ActionBarActivity {
     }
     
     public void sairJogo(View v){
-    	System.exit(0);
     	finish();
     }
     

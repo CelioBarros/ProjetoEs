@@ -2,6 +2,7 @@ package com.projetoes.projetoes;
 
 import com.projetoes.R;
 import com.projetoes.banco.DataBase;
+import com.projetoes.jogo.Jogo;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -19,6 +20,7 @@ public class GameOver extends Activity{
 	    }
 	
     public void voltar(View v){
+    	finish();
     	Intent intent = new Intent(this, MainActivity.class);
     	startActivity(intent);
     	finish();
@@ -28,6 +30,6 @@ public class GameOver extends Activity{
     public void gameOver(){
     	DataBase db = DataBase.getInstance(this);
     	TextView textView = (TextView) findViewById(R.id.gameOver);
-    	textView.setText("Melhor Ranking: "+db.findRanking());
+    	textView.setText("Melhor Recorde: "+db.findRanking() + "\n"+"Sua pontuação foi: " + Jogo.score);
     }
 }

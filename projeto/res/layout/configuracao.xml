@@ -17,7 +17,7 @@
             android:clickable="true"
             android:enabled="true"
             android:onClick="sound"
-            android:text="Som"
+            android:text="            Som"
             android:textColor="#FFFFFF" />
 
         <Button

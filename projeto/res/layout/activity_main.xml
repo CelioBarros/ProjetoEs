@@ -54,7 +54,7 @@
         android:onClick="sairJogo"
         android:background="#8B0000"
         android:textColor="#FFFFFF"
-        android:text="Sair" />
+        android:text=" Sair " />
 
     <Button
         android:id="@+id/opcoes"
