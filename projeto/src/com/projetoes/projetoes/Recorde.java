@@ -18,7 +18,7 @@ public class Recorde extends Activity{
 	public void recorde(){
 		DataBase db = DataBase.getInstance(this);
 		TextView textView = (TextView) findViewById(R.id.recorde);
-		textView.setText("Melhor Ranking: "+db.findRanking());
+		textView.setText("Recorde: "+db.findRanking());
 	}
 	public void voltar(View v){
 		Intent intent = new Intent(this, MainActivity.class);

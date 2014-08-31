@@ -30,6 +30,6 @@ public class GameOver extends Activity{
     public void gameOver(){
     	DataBase db = DataBase.getInstance(this);
     	TextView textView = (TextView) findViewById(R.id.gameOver);
-    	textView.setText("Melhor Recorde: "+db.findRanking() + "\n"+"Sua pontuação foi: " + Jogo.score);
+    	textView.setText("Recorde: "+db.findRanking() + "\n"+"Sua pontuação foi: " + Jogo.score);
     }
 }

@@ -40,6 +40,7 @@ import com.projetoes.projetoes.GameOver;
 
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 
 /**
  * (c) 2010 Nicolas Gramlich (c) 2011 Zynga
@@ -67,8 +68,7 @@ public class Jogo extends SimpleBaseGameActivity implements
 	Sprite ballSprite;
 	Context ctx;
 	private ITextureRegion ball;
-	private float xAntigoBola = 0;
-	private float yAntigoBola = 0;
+
 	// Obstaculo
 	private BitmapTextureAtlas mBitmapObstaculoTextureAtlas;
 	private TextureRegion mObstaculoTextureRegion;
@@ -90,19 +90,19 @@ public class Jogo extends SimpleBaseGameActivity implements
 	private TextureRegion mMoedaTextureRegion;
 	Sprite moedaSprite;
 	Sprite moeda;
+	private boolean moedaPega = false;
 
 	// Score
 	public static int score = 0;
 	int countScore = 0;
 	private BitmapFont mBitmapFont;
-	boolean isAlive = true;
+	private boolean isAlive = true;
 	private Text bitmapText;
+	float aditivoVelocidade =0;
 
 	// Listas
 	private ArrayList<Sprite> listaBlocos = new ArrayList<Sprite>();
-	private ArrayList<Sprite> listaBlocosRemove = new ArrayList<Sprite>();
 	private ArrayList<Sprite> listaFim = new ArrayList<Sprite>();
-	private ArrayList<Sprite> listaFimRemove = new ArrayList<Sprite>();
 	private Music mMusic;
 	DataBase db = new DataBase(this);
 
@@ -255,13 +255,13 @@ public class Jogo extends SimpleBaseGameActivity implements
 			@Override
 			public void onUpdate(float pSecondsElapsed) {
 				int numero = (int) (Math.random() * 448);
-				if (countScore % 101 == 0) {
+				if (countScore % 111 == 0) {
 					listaBlocos.add(new Sprite(900, numero,
 							mObstaculoTextureRegion,
 							getVertexBufferObjectManager()));
 
 				}
-				if (countScore % 121 == 0 && countScore != 0) {
+				if (countScore % 131 == 0 && countScore != 0) {
 					if ((int) (Math.random() * 2) == 0) {
 						listaFim.add(new Sprite(900, numero,
 								mBuracoTextureRegion,
@@ -281,6 +281,7 @@ public class Jogo extends SimpleBaseGameActivity implements
 						moeda = new Sprite(900, numero, mMoedaTextureRegion,
 								getVertexBufferObjectManager());
 					}
+					moedaPega = false;
 					scene.attachChild(moeda);
 				}
 
@@ -300,7 +301,7 @@ public class Jogo extends SimpleBaseGameActivity implements
 				Score();
 				for (Sprite bloco : listaBlocos) {
 
-					float testeAux = bloco.getX() - 2f;
+					float testeAux = bloco.getX() - 2f - aditivoVelocidade;
 					bloco.setPosition(testeAux, bloco.getY());
 
 					try {
@@ -309,40 +310,44 @@ public class Jogo extends SimpleBaseGameActivity implements
 								end();
 								break;
 							}
-							ballSprite.setPosition(xAntigoBola, yAntigoBola);
-							// isAlive= false;
-						} else {
-							if (yAntigoBola < ballSprite.getY()) {
-								yAntigoBola = ballSprite.getY() - 10;
-							} else if (yAntigoBola > ballSprite.getY()) {
-								yAntigoBola = ballSprite.getY() + 10;
-							} else {
-								yAntigoBola = ballSprite.getY();
+							if (bloco.getY() < ballSprite.getY()) {
+								ballSprite.setPosition(ballSprite.getX(), ballSprite.getY()+10);
+							} else if (bloco.getY() > ballSprite.getY()) {
+								ballSprite.setPosition(ballSprite.getX(), ballSprite.getY()-10);
 							}
-							if (xAntigoBola != ballSprite.getX()) {
-								xAntigoBola = ballSprite.getX() - 6;
+							if (bloco.getX() < ballSprite.getX()) {
+								ballSprite.setPosition(ballSprite.getX()+10, ballSprite.getY());
+							} else if (bloco.getX() > ballSprite.getX()) {
+								ballSprite.setPosition(ballSprite.getX()-10, ballSprite.getY());
 							}
 						}
-
 					} catch (Exception e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-					if (bloco.getX() < 0) {
+					
+/*					if (bloco.getX() < 0) {
 						scene.detachChild(bloco);
 						listaBlocosRemove.add(bloco);
 
-					}
+					}*/
 				}
-				for (Sprite bloco : listaBlocosRemove) {
+				/*for (Sprite bloco : listaBlocosRemove) {
 					listaBlocos.remove(bloco);
 				}
-				listaBlocosRemove.clear();
+				listaBlocosRemove.clear();*/
 				// Log.d("Teste", score + "" );
+				for (int i = listaBlocos.size()-1; i >= 0; i--) {
+					if (listaBlocos.get(i).getX() < 0) {
+						scene.detachChild(listaBlocos.get(i));
+						listaBlocos.remove(i);
 
+					}
+				}
+				
 				for (Sprite fim : listaFim) {
 
-					float testeAux = fim.getX() - 2f;
+					float testeAux = fim.getX() - 2f - aditivoVelocidade;
 					fim.setPosition(testeAux, fim.getY());
 
 					try {
@@ -356,28 +361,46 @@ public class Jogo extends SimpleBaseGameActivity implements
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-					if (fim.getX() < 0) {
+/*					if (fim.getX() < 0) {
 						scene.detachChild(fim);
-						listaBlocosRemove.add(fim);
+						listaFimRemove.add(fim);
+
+					}
+*/				}
+				
+				for (int i = listaFim.size()-1; i >= 0; i--) {
+					if (listaFim.get(i).getX() < 0) {
+						scene.detachChild(listaFim.get(i));
+						listaFim.remove(i);
 
 					}
 				}
 
-				for (Sprite buraco : listaFimRemove) {
+/*				for (Sprite buraco : listaFimRemove) {
 					listaFim.remove(buraco);
 				}
 				listaFimRemove.clear();
-
-				moeda.setPosition(moeda.getX() - 2f, moeda.getY());
+*/
+				moeda.setPosition(moeda.getX() - 2f - aditivoVelocidade, moeda.getY());
 
 				if (moeda.getX() < 0) {
 					scene.detachChild(moeda);
 				}
 				if (ballSprite.collidesWith(moeda) && isAlive) {
-					countScore = countScore + 100;
+					if (!moedaPega)
+						countScore = countScore + 5000;
 					scene.detachChild(moeda);
+					moedaPega = true;
 				}
+				if (aditivoVelocidade <=4)
+					if(aditivoVelocidade >3)
+						aditivoVelocidade += 0.0001;
+					else if(aditivoVelocidade > 2)
+						aditivoVelocidade += 0.0005;
+					else
+						aditivoVelocidade += 0.001;
 			}
+			
 		});
 		return scene;
 	}
